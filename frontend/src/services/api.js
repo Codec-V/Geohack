@@ -1,0 +1,45 @@
+import axios from 'axios';
+
+const API_BASE_URL = 'http://localhost:5000/api';
+
+const api = axios.create({
+    baseURL: API_BASE_URL,
+    headers: {
+        'Content-Type': 'application/json'
+    }
+});
+
+// Plot APIs
+export const plotAPI = {
+    // Get all plots
+    getAll: () => api.get('/plots'),
+
+    // Get specific plot
+    getById: (id) => api.get(`/plots/${id}`),
+
+    // Upload new plot
+    upload: (plotData) => api.post('/plots/upload', plotData),
+
+    // Analyze plot
+    analyze: (id, options = {}) => api.post(`/plots/${id}/analyze`, options),
+
+    // Analyze custom area
+    analyzeCustom: (geometry) => api.post('/plots/analyze-custom', { geometry }),
+
+    // Get report
+    getReport: (id) => api.get(`/plots/${id}/report`),
+
+    // Get statistics
+    getStats: () => api.get('/plots/stats/summary')
+};
+
+// Error interceptor
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        console.error('API Error:', error.response?.data || error.message);
+        return Promise.reject(error);
+    }
+);
+
+export default api;
