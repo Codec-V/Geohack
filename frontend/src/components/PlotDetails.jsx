@@ -259,6 +259,46 @@ const PlotDetails = ({ plot, onClose, onAnalysisComplete }) => {
                         </section>
                     )}
 
+                    {/* Overlap Analysis (Visible only for custom drawn areas) */}
+                    {plot.latestAnalysis?.overlapAnalysis && (
+                        <section className="details-section">
+                            <h3>Overlap With Vacant Land</h3>
+                            <div className="info-grid">
+                                <div className="info-item" style={{ gridColumn: '1 / -1' }}>
+                                    <span className="info-label">Detected Overlap with Vacant/High-Risk Plots</span>
+                                    <div className="progress-bar-container" style={{ height: '24px', background: '#e2e8f0', borderRadius: '12px', marginTop: '8px', overflow: 'hidden' }}>
+                                        <div 
+                                            className="progress-fill" 
+                                            style={{ 
+                                                width: `${plot.latestAnalysis.overlapAnalysis.overlapPercentage}%`, 
+                                                background: '#f59e0b',
+                                                height: '100%',
+                                                transition: 'width 0.5s ease-out'
+                                            }}
+                                        ></div>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px', fontSize: '0.9rem' }}>
+                                        <span>{(plot.latestAnalysis.overlapAnalysis.totalOverlappingVaantArea / 10000).toFixed(2)} hectares</span>
+                                        <strong>{plot.latestAnalysis.overlapAnalysis.overlapPercentage.toFixed(1)}% Overlap</strong>
+                                    </div>
+                                </div>
+                                
+                                {plot.latestAnalysis.overlapAnalysis.overlappingPlots?.length > 0 && (
+                                    <div className="info-item" style={{ gridColumn: '1 / -1' }}>
+                                        <span className="info-label">Affected Plots</span>
+                                        <ul style={{ margin: '8px 0', paddingLeft: '20px', fontSize: '0.9rem', color: '#4b5563' }}>
+                                            {plot.latestAnalysis.overlapAnalysis.overlappingPlots.map(p => (
+                                                <li key={p.id}>
+                                                    {p.name} ({p.plotId}) - {(p.overlapArea / 10000).toFixed(2)} ha
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
+                        </section>
+                    )}
+
                     {/* Actions */}
                     <section className="details-actions">
                         <button
