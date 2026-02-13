@@ -278,6 +278,25 @@ const PlotDetails = ({ plot, onClose, onAnalysisComplete }) => {
                                 {generatingReport ? '⏳ Generating...' : '📄 Generate Report'}
                             </button>
                         )}
+
+                        <div className="plot-details-danger-zone">
+                            <button
+                                className="btn btn-danger btn-full"
+                                onClick={async () => {
+                                    if (window.confirm('Are you sure you want to delete this plot?')) {
+                                        try {
+                                            await plotAPI.delete(plot._id);
+                                            onClose();
+                                            onAnalysisComplete();
+                                        } catch (error) {
+                                            alert('Failed to delete plot');
+                                        }
+                                    }
+                                }}
+                            >
+                                🗑️ Delete Plot
+                            </button>
+                        </div>
                     </section>
                 </div>
             </div>

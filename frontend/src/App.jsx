@@ -33,16 +33,27 @@ function App() {
     setSelectedPlot(plot);
   };
 
-  const handleUploadSuccess = () => {
-    fetchPlots();
-    setShowUpload(false);
-  };
-
   const handleAnalysisComplete = async () => {
     await fetchPlots();
     if (selectedPlot) {
       const updatedPlot = plots.find(p => p._id === selectedPlot._id);
       setSelectedPlot(updatedPlot);
+    }
+  };
+
+  const handleDeletePlot = async (e, plotId) => {
+    e.stopPropagation();
+    if (window.confirm('Are you sure you want to delete this plot? This action cannot be undone.')) {
+      try {
+        await plotAPI.delete(plotId);
+        await fetchPlots();
+        if (selectedPlot?._id === plotId) {
+          setSelectedPlot(null);
+        }
+      } catch (error) {
+        console.error('Error deleting plot:', error);
+        alert('Failed to delete plot');
+      }
     }
   };
 
@@ -148,11 +159,20 @@ function App() {
                     >
                       <div className="plot-card-header">
                         <h3>{plot.name}</h3>
-                        {riskScore !== undefined && (
-                          <span className={`risk-badge ${getRiskClass(riskScore)}`}>
-                            {riskScore >= 70 ? 'High' : riskScore >= 40 ? 'Medium' : 'Low'}
-                          </span>
-                        )}
+                        <div className="plot-card-actions">
+                          {riskScore !== undefined && (
+                            <span className={`risk-badge ${getRiskClass(riskScore)}`}>
+                              {riskScore >= 70 ? 'High' : riskScore >= 40 ? 'Medium' : 'Low'}
+                            </span>
+                          )}
+                          <button
+                            className="btn-delete-icon"
+                            onClick={(e) => handleDeletePlot(e, plot._id)}
+                            title="Delete Plot"
+                          >
+                            🗑️
+                          </button>
+                        </div>
                       </div>
                       <p className="plot-card-id">ID: {plot.plotId}</p>
                       <div className="plot-card-stats">

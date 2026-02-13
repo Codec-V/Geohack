@@ -29,6 +29,9 @@ export const plotAPI = {
     // Get report
     getReport: (id) => api.get(`/plots/${id}/report`),
 
+    // Delete plot
+    delete: (id) => api.delete(`/plots/${id}`),
+
     // Get statistics
     getStats: () => api.get('/plots/stats/summary')
 };

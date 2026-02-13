@@ -316,4 +316,35 @@ router.get('/stats/summary', async (req, res) => {
     }
 });
 
+/**
+ * DELETE /api/plots/:id
+ * Remove a plot from the system
+ */
+router.delete('/:id', async (req, res) => {
+    try {
+        const plot = await Plot.findById(req.params.id);
+
+        if (!plot) {
+            return res.status(404).json({
+                success: false,
+                error: 'Plot not found'
+            });
+        }
+
+        await plot.deleteOne();
+
+        res.json({
+            success: true,
+            message: 'Plot deleted successfully'
+        });
+    } catch (error) {
+        console.error('Error deleting plot:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to delete plot',
+            message: error.message
+        });
+    }
+});
+
 export default router;
