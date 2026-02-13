@@ -1,113 +1,236 @@
 .map-container {
-    position: relative;
+    height: 75vh;
     width: 100%;
-    height: 600px;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-}
-
-.map-instructions {
-    position: absolute;
-    top: 70px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(30, 41, 59, 0.9);
-    color: white;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-size: 0.875rem;
-    z-index: 1000;
-    pointer-events: none;
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.map-instructions button {
-    pointer-events: auto;
-}
-
-.map-legend {
-    position: absolute;
-    bottom: 20px;
-    right: 20px;
-    background: white;
-    padding: 1rem;
+    position: relative;
     border-radius: 8px;
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-    z-index: 1000;
-    min-width: 150px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
-.map-legend h4 {
-    margin: 0 0 0.75rem 0;
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #1e293b;
-}
-
-.legend-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
-    font-size: 0.75rem;
-    color: #64748b;
-}
-
-.legend-color {
-    width: 20px;
-    height: 12px;
-    border-radius: 2px;
-    display: inline-block;
-}
-
-.leaflet-popup-content {
-    margin: 8px;
-}
-
-.leaflet-popup-content h3 {
-    color: #1e293b;
-}
-
-/* Map View Toggle */
 .map-view-toggle {
     position: absolute;
     top: 20px;
     right: 20px;
     z-index: 1000;
     background: white;
-    padding: 4px;
+    padding: 6px;
     border-radius: 8px;
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     display: flex;
     gap: 4px;
+    align-items: center;
 }
 
 .toggle-btn {
-    padding: 6px 12px;
+    padding: 8px 12px;
     border: none;
     background: transparent;
-    cursor: pointer;
     border-radius: 6px;
-    font-size: 0.875rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: #4b5563;
+    transition: all 0.2s;
     font-weight: 500;
-    color: #64748b;
-    transition: all 0.2s ease;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 6px;
 }
 
 .toggle-btn:hover {
-    background: #f1f5f9;
-    color: #1e293b;
+    background: #f3f4f6;
+    color: #111827;
 }
 
 .toggle-btn.active {
     background: #eff6ff;
     color: #2563eb;
     font-weight: 600;
+}
+
+/* Search Bar Styles */
+.map-search-bar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-right: 8px;
+    position: relative;
+}
+
+.map-search-bar input {
+    padding: 6px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 14px;
+    width: 200px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.map-search-bar input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.map-search-bar button {
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.map-search-bar button:hover {
+    background: #2563eb;
+}
+
+.map-search-bar button:disabled {
+    background: #93c5fd;
+    cursor: not-allowed;
+}
+
+.search-error-tooltip {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 4px;
+    background: #fee2e2;
+    color: #b91c1c;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    pointer-events: none;
+}
+
+/* Search Suggestions Dropdown */
+.search-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border-radius: 6px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    margin-top: 4px;
+    padding: 4px 0;
+    list-style: none;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1001;
+    border: 1px solid #e5e7eb;
+}
+
+.search-suggestions li {
+    padding: 8px 12px;
+    font-size: 13px;
+    color: #374151;
+    cursor: pointer;
+    border-bottom: 1px solid #f3f4f6;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.search-suggestions li:last-child {
+    border-bottom: none;
+}
+
+.search-suggestions li:hover {
+    background: #eff6ff;
+    color: #2563eb;
+}
+
+/* Scrollbar for suggestions */
+.search-suggestions::-webkit-scrollbar {
+    width: 6px;
+}
+
+.search-suggestions::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.search-suggestions::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 3px;
+}
+
+.search-suggestions::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+}
+
+/* Legend */
+.map-legend {
+    position: absolute;
+    bottom: 24px;
+    left: 24px;
+    z-index: 1000;
+    background: white;
+    padding: 16px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    min-width: 180px;
+}
+
+.map-legend h4 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    color: #111827;
+    font-weight: 600;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 13px;
+    color: #4b5563;
+}
+
+.legend-item:last-child {
+    margin-bottom: 0;
+}
+
+.legend-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+}
+
+/* Instructions */
+.map-instructions {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    background: white;
+    padding: 8px 16px;
+    border-radius: 50px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    font-size: 0.9rem;
+    color: #1f2937;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    border: 2px solid #3b82f6;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        top: -50px;
+        opacity: 0;
+    }
+    to {
+        top: 20px;
+        opacity: 1;
+    }
 }

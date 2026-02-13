@@ -15,6 +15,87 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
     const [drawPoints, setDrawPoints] = useState([]);
     const [isAnalyzingCustom, setIsAnalyzingCustom] = useState(false);
 
+    // Search state
+    const [searchQuery, setSearchQuery] = useState('');
+    const [suggestions, setSuggestions] = useState([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [searchError, setSearchError] = useState(null);
+    const debounceTimeoutRef = useRef(null);
+
+    // Fetch suggestions as user types
+    const handleInputChange = (e) => {
+        const query = e.target.value;
+        setSearchQuery(query);
+
+        if (debounceTimeoutRef.current) {
+            clearTimeout(debounceTimeoutRef.current);
+        }
+
+        if (query.trim().length < 3) {
+            setSuggestions([]);
+            return;
+        }
+
+        debounceTimeoutRef.current = setTimeout(async () => {
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`);
+                const data = await response.json();
+                setSuggestions(data || []);
+            } catch (error) {
+                console.error('Error fetching suggestions:', error);
+            }
+        }, 300);
+    };
+
+    const handleSelectSuggestion = (place) => {
+        setSearchQuery(place.display_name);
+        setSuggestions([]);
+        
+        const lat = parseFloat(place.lat);
+        const lon = parseFloat(place.lon);
+        
+        if (mapRef.current) {
+            mapRef.current.flyTo([lat, lon], 14, {
+                duration: 1.5
+            });
+        }
+    };
+
+    const handleSearch = async () => {
+        if (!searchQuery.trim()) return;
+        
+        // If we have suggestions, pick the first one
+        if (suggestions.length > 0) {
+            handleSelectSuggestion(suggestions[0]);
+            return;
+        }
+        
+        setIsSearching(true);
+        setSearchError(null);
+        
+        try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1`);
+            const data = await response.json();
+            
+            if (data && data.length > 0) {
+                const { lat, lon } = data[0];
+                if (mapRef.current) {
+                    mapRef.current.flyTo([lat, lon], 14, {
+                        duration: 1.5
+                    });
+                }
+            } else {
+                setSearchError('Location not found');
+                setTimeout(() => setSearchError(null), 3000);
+            }
+        } catch (error) {
+            console.error('Search failed:', error);
+            setSearchError('Search failed');
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
     // Map events component to handle clicks
     const MapEvents = () => {
         useMapEvents({
@@ -266,6 +347,44 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
             )}
 
             <div className="map-view-toggle">
+                {/* Search Bar */}
+                <div className="map-search-bar" onClick={e => e.stopPropagation()}>
+                    <input 
+                        type="text" 
+                        placeholder="Search location..." 
+                        value={searchQuery}
+                        onChange={handleInputChange}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                        onFocus={() => {
+                            if (searchQuery.length >= 3 && suggestions.length === 0) {
+                                // Trigger search if re-focusing with existing text
+                                handleInputChange({ target: { value: searchQuery } });
+                            }
+                        }}
+                    />
+                    <button onClick={handleSearch} disabled={isSearching}>
+                        {isSearching ? '...' : '🔍'}
+                    </button>
+                    
+                    {/* Suggestions Dropdown */}
+                    {suggestions.length > 0 && (
+                        <ul className="search-suggestions">
+                            {suggestions.map((place) => (
+                                <li 
+                                    key={place.place_id} 
+                                    onClick={() => handleSelectSuggestion(place)}
+                                >
+                                    {place.display_name}
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+
+                    {searchError && <span className="search-error-tooltip">{searchError}</span>}
+                </div>
+
+                <div style={{ width: '1px', background: '#e2e8f0', margin: '0 8px' }}></div>
+
                 {/* Draw Toggle */}
                 <button
                     className={`toggle-btn ${isDrawMode ? 'active' : ''}`}
