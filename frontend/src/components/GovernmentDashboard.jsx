@@ -9,7 +9,7 @@ import DevelopmentSection from './DashboardSections/DevelopmentSection';
 // Register ChartJS components globally for all sections
 ChartJS.register(ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale);
 
-const GovernmentDashboard = ({ onRefresh, lang = 'en', t = (s) => s }) => {
+const GovernmentDashboard = ({ onRefresh, lang = 'en', t = (s) => s, darkMode = false }) => {
     const [stats, setStats] = useState(null);
     const [plots, setPlots] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -61,7 +61,7 @@ const GovernmentDashboard = ({ onRefresh, lang = 'en', t = (s) => s }) => {
 
     return (
         <div className="dashboard">
-            <header className="dashboard-header">
+            <header className="dashboard-header" style={{ borderColor: darkMode ? '#334155' : '#e2e8f0' }}>
                 <div>
                     <h1>{t('appTitle')}</h1>
                     <p className="subtitle">{t('govt_portal')} • {currentDate}</p>
@@ -69,7 +69,7 @@ const GovernmentDashboard = ({ onRefresh, lang = 'en', t = (s) => s }) => {
                 <div style={{display: 'flex', gap: '12px'}}>
                     <button className="btn-print" onClick={() => window.print()} style={{
                         padding: '8px 16px', 
-                        background: '#334155', 
+                        background: darkMode ? '#334155' : '#334155', 
                         color: 'white', 
                         border: 'none', 
                         borderRadius: '6px', 
@@ -88,17 +88,17 @@ const GovernmentDashboard = ({ onRefresh, lang = 'en', t = (s) => s }) => {
             <div className="dashboard-content">
                 {/* Section 1: Financial Impact */}
                 <div className="animate-fade-in dashboard-section-1">
-                    <FinanceSection stats={stats} t={t} />
+                    <FinanceSection stats={stats} t={t} darkMode={darkMode} />
                 </div>
 
                 {/* Section 2: Land Usage Analysis */}
                 <div className="animate-fade-in dashboard-section-2">
-                    <LandUsageSection plots={plots} stats={stats} t={t} />
+                    <LandUsageSection plots={plots} stats={stats} t={t} darkMode={darkMode} />
                 </div>
 
                 {/* Section 3: Development Growth */}
                 <div className="animate-fade-in dashboard-section-3">
-                    <DevelopmentSection plots={plots} t={t} />
+                    <DevelopmentSection plots={plots} t={t} darkMode={darkMode} />
                 </div>
 
                 {/* Section 4: Critical Alerts & Action */}

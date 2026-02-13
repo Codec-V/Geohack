@@ -42,8 +42,8 @@
 }
 
 .toggle-btn.active {
-    background: #eff6ff;
-    color: #2563eb;
+    background: #f0fdf4;
+    color: #0d9488;
     font-weight: 600;
 }
 
@@ -67,12 +67,12 @@
 }
 
 .map-search-bar input:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    border-color: #0d9488;
+    box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.1);
 }
 
 .map-search-bar button {
-    background: #3b82f6;
+    background: #0d9488;
     color: white;
     border: none;
     border-radius: 6px;
@@ -86,11 +86,11 @@
 }
 
 .map-search-bar button:hover {
-    background: #2563eb;
+    background: #0f766e;
 }
 
 .map-search-bar button:disabled {
-    background: #93c5fd;
+    background: #99f6e4;
     cursor: not-allowed;
 }
 
@@ -143,8 +143,8 @@
 }
 
 .search-suggestions li:hover {
-    background: #eff6ff;
-    color: #2563eb;
+    background: #f0fdfa;
+    color: #0d9488;
 }
 
 /* Scrollbar for suggestions */
@@ -220,7 +220,7 @@
     display: flex;
     gap: 12px;
     align-items: center;
-    border: 2px solid #3b82f6;
+    border: 2px solid #0d9488;
     animation: slideDown 0.3s ease-out;
 }
 
@@ -404,14 +404,14 @@
 }
 
 .action-btn.primary {
-    background: #3b82f6;
+    background: #0d9488;
     color: white;
     width: 100%;
 }
 
 .action-btn.primary:hover:not(:disabled) {
-    background: #2563eb;
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+    background: #0f766e;
+    box-shadow: 0 4px 12px rgba(13, 148, 136, 0.2);
 }
 
 .action-btn.secondary {

@@ -46,12 +46,45 @@ const PlotDetails = ({ plot, onClose, onAnalysisComplete, lang = 'en', t = (s) =
 
     const riskLevel = getRiskLevel(plot.latestAnalysis?.finalRiskScore);
 
+    // Blockchain Modal State
+    const [showBlockchainModal, setShowBlockchainModal] = useState(false);
+
+    // Simulated Blockchain Data
+    const blockchainData = {
+        contractAddress: "0x71C...9A23",
+        tokenId: plot.plotId.replace(/\D/g, '').substring(0, 6) || "102938",
+        transactions: [
+            { id: 1, type: "Minting", date: "2023-01-15", hash: "0x8f...3a1b", status: "Confirmed" },
+            { id: 2, type: "Verification", date: "2024-06-20", hash: "0x2c...9d4e", status: "Verified" },
+            { id: 3, type: "Audit", date: "2025-12-05", hash: "0x5b...1f8a", status: "Verified" }
+        ]
+    };
+
     return (
         <div className="plot-details-overlay" onClick={onClose}>
             <div className="plot-details-panel" onClick={(e) => e.stopPropagation()}>
                 <div className="plot-details-header">
                     <div>
-                        <h2>{plot.name}</h2>
+                        <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+                            <h2>{plot.name}</h2>
+                            <span 
+                                onClick={() => setShowBlockchainModal(true)}
+                                style={{
+                                    background: 'linear-gradient(135deg, #4f46e5, #818cf8)',
+                                    color: 'white',
+                                    padding: '4px 12px',
+                                    borderRadius: '20px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 'bold',
+                                    cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', gap: '4px',
+                                    boxShadow: '0 2px 5px rgba(79, 70, 229, 0.3)'
+                                }}
+                                title="Click to view Blockchain History"
+                            >
+                                🛡️ Verified on Chain
+                            </span>
+                        </div>
                         <p className="plot-id">{t('plot_no')}: {plot.plotId}</p>
                     </div>
                     <button className="btn-close" onClick={onClose}>✕</button>
@@ -446,7 +479,70 @@ const PlotDetails = ({ plot, onClose, onAnalysisComplete, lang = 'en', t = (s) =
                     </section>
                 </div>
             </div>
+
+            {/* Blockchain History Modal */}
+            {showBlockchainModal && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+                    zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }} onClick={() => setShowBlockchainModal(false)}>
+                    <div style={{
+                        background: 'white', padding: '0', borderRadius: '16px',
+                        width: '500px', maxWidth: '90%', overflow: 'hidden',
+                        boxShadow: '0 20px 50px rgba(0,0,0,0.2)'
+                    }} onClick={e => e.stopPropagation()}>
+                        {/* Header */}
+                        <div style={{
+                            background: 'linear-gradient(135deg, #4f46e5, #818cf8)',
+                            padding: '24px', color: 'white'
+                        }}>
+                            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px'}}>
+                                <h2 style={{margin: 0, fontSize: '1.5rem'}}>🔗 Immutable Ledger</h2>
+                                <button onClick={() => setShowBlockchainModal(false)} style={{background: 'none', border: 'none', color: 'white', fontSize: '1.5rem', cursor: 'pointer'}}>✕</button>
+                            </div>
+                            <div style={{fontSize: '0.9rem', opacity: 0.9}}>Contract: {blockchainData.contractAddress}</div>
+                            <div style={{fontSize: '0.9rem', opacity: 0.9}}>Token ID: #{blockchainData.tokenId}</div>
+                        </div>
+
+                        {/* Timeline */}
+                        <div style={{padding: '24px', maxHeight: '400px', overflowY: 'auto'}}>
+                            <div style={{position: 'relative', borderLeft: '2px solid #e5e7eb', marginLeft: '12px', paddingLeft: '24px'}}>
+                                {blockchainData.transactions.map((tx, i) => (
+                                    <div key={tx.id} style={{marginBottom: '24px', position: 'relative'}}>
+                                        <div style={{
+                                            position: 'absolute', left: '-31px', top: '0',
+                                            width: '16px', height: '16px', borderRadius: '50%',
+                                            background: i === 0 ? '#10b981' : '#4f46e5',
+                                            border: '4px solid white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                        }}></div>
+                                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px'}}>
+                                            <h4 style={{margin: 0, fontSize: '1rem', color: '#1f2937'}}>{tx.type}</h4>
+                                            <span style={{fontSize: '0.8rem', color: '#6b7280'}}>{tx.date}</span>
+                                        </div>
+                                        <div style={{fontSize: '0.85rem', color: '#4b5563', fontFamily: 'monospace', background: '#f3f4f6', padding: '4px 8px', borderRadius: '4px', display: 'inline-block'}}>
+                                            Hash: {tx.hash}
+                                        </div>
+                                        <div style={{marginTop: '4px'}}>
+                                            <span style={{
+                                                fontSize: '0.75rem', padding: '2px 8px', borderRadius: '12px',
+                                                background: '#dcfce7', color: '#15803d', fontWeight: '600'
+                                            }}>
+                                                ✓ {tx.status}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div style={{textAlign: 'center', marginTop: '16px', color: '#6b7280', fontSize: '0.85rem'}}>
+                                🔒 All records are cryptographically secured on CSIDC-Chain
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div >
     );
 };
 export default PlotDetails;
+

@@ -5,7 +5,7 @@
 }
 
 :root {
-  --color-primary: #2563eb;
+  --color-primary: #0d9488; /* Teal-600 */
   --color-success: #16a34a;
   --color-warning: #f59e0b;
   --color-danger: #dc2626;
@@ -70,7 +70,7 @@ code {
 }
 
 .btn-primary:hover {
-  background: #1d4ed8;
+  background: #0f766e; /* Teal-700 */
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
@@ -132,4 +132,109 @@ code {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* Dark Mode Overrides (Slate-900 Base) */
+.dark {
+  --color-bg: #0f172a;       /* Slate-900 */
+  --color-surface: #1e293b;  /* Slate-800 */
+  --color-text: #f1f5f9;     /* Slate-100 */
+  --color-text-secondary: #94a3b8; /* Slate-400 */
+  --color-border: #334155;   /* Slate-700 */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5);
+}
+
+.dark .app-header {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); /* Keep Slate for Dark Mode, but maybe hint at Teal? Let's keep it neutral Slate for now as requested, or slightly Teal-tinted */
+    border-bottom: 1px solid #1e293b;
+}
+
+.dark .map-container,
+.dark .plot-card, 
+.dark .card,
+.dark .modal-content,
+.dark .map-view-toggle,
+.dark .map-legend,
+.dark .draw-panel,
+.dark .coordinates-panel,
+.dark .map-instructions,
+.dark .custom-tooltip {
+    background: var(--color-surface);
+    border-color: var(--color-border);
+    color: var(--color-text);
+}
+
+.dark .draw-panel-header, 
+.dark .coords-scroll,
+.dark .draw-stats,
+.dark .coords-list {
+    background: #0f172a; /* Slate 900 for inner panels */
+    border-color: var(--color-border);
+}
+
+.dark .stat-value small, 
+.dark .stat-label, 
+.dark .coord-row span,
+.dark .tab {
+    color: var(--color-text-secondary);
+}
+
+.dark .tab:hover {
+    background: rgba(255,255,255,0.05);
+    color: var(--color-text);
+}
+
+.dark .tab.active {
+    color: #60a5fa; /* Blue-400 */
+    border-bottom-color: #60a5fa;
+}
+
+.dark input, 
+.dark select, 
+.dark textarea {
+    background: #0f172a;
+    border-color: var(--color-border);
+    color: var(--color-text);
+}
+
+.dark input::placeholder {
+    color: #475569;
+}
+
+/* Dark Mode Plot Card Risks */
+.dark .plot-card.risk-high {
+    background: linear-gradient(135deg, #450a0a 0%, #1e293b 100%);
+    border-color: #7f1d1d;
+}
+
+.dark .plot-card.risk-medium {
+    background: linear-gradient(135deg, #451a03 0%, #1e293b 100%);
+    border-color: #78350f;
+}
+
+.dark .plot-card.risk-low {
+    background: linear-gradient(135deg, #052e16 0%, #1e293b 100%);
+    border-color: #14532d;
+}
+
+.dark .close-btn:hover {
+    background: #334155;
+    color: #ef4444;
+}
+
+.dark .action-btn.secondary {
+    background: transparent;
+    border-color: var(--color-border);
+    color: var(--color-text);
+}
+
+.dark .action-btn.secondary:hover {
+    background: #334155;
+}
+
+.dark .coord-row {
+    border-bottom-color: var(--color-border);
+    color: var(--color-text);
 }

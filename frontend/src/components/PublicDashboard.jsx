@@ -5,7 +5,7 @@ import { Line } from 'react-chartjs-2';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
-const PublicDashboard = ({ lang = 'en', t = (s) => s }) => {
+const PublicDashboard = ({ lang = 'en', t = (s) => s, darkMode = false }) => {
     const [plots, setPlots] = useState([]);
     const [loading, setLoading] = useState(true);
     
@@ -24,6 +24,8 @@ const PublicDashboard = ({ lang = 'en', t = (s) => s }) => {
     ]);
     const [chatInput, setChatInput] = useState('');
     const [show360, setShow360] = useState(null); // Plot object for 360 view
+    const [showGrievanceModal, setShowGrievanceModal] = useState(false);
+    const [grievanceSubmitted, setGrievanceSubmitted] = useState(false);
 
     useEffect(() => {
         fetchData();
@@ -33,10 +35,86 @@ const PublicDashboard = ({ lang = 'en', t = (s) => s }) => {
         try {
             const response = await plotAPI.getAll();
             // FILTER: Show only vacant plots for public view
-            const publicPlots = response.data.data.filter(p => p.status === 'vacant' || p.latestAnalysis?.isVacant);
+            let publicPlots = response.data.data.filter(p => p.status === 'vacant' || p.latestAnalysis?.isVacant);
+            
+            // DUMMY DATA INJECTION for Demonstration
+            if (publicPlots.length < 5) {
+                const dummyPlots = [
+                    {
+                        _id: 'dummy1',
+                        plotId: 'IND-405-A',
+                        approvedArea: 15000,
+                        marketValuePerSqMeter: 5200,
+                        status: 'vacant',
+                        zoning: 'Industrial (Heavy)',
+                        connectivity: '2km from NH-48',
+                        bestUse: 'Manufacturing',
+                        tags: ['Corner Plot', 'Gas Pipeline'],
+                        images: [
+                            "https://images.unsplash.com/photo-1599423300746-b62507ac97f5?w=400&h=300&fit=crop",
+                            "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&h=300&fit=crop"
+                        ]
+                    },
+                    {
+                        _id: 'dummy2',
+                        plotId: 'IND-408-B',
+                        approvedArea: 8500,
+                        marketValuePerSqMeter: 4800,
+                        status: 'vacant',
+                        zoning: 'Industrial (Light)',
+                        connectivity: '500m from Metro',
+                        bestUse: 'Warehousing',
+                        tags: ['Wide Road Access', 'Power Backup'],
+                        images: [
+                            "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=400&h=300&fit=crop",
+                            "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=400&h=300&fit=crop"
+                        ]
+                    },
+                    {
+                        _id: 'dummy3',
+                        plotId: 'COM-102-C',
+                        approvedArea: 5000,
+                        marketValuePerSqMeter: 12000,
+                        status: 'vacant',
+                        zoning: 'Commercial',
+                        connectivity: 'Main Road Facing',
+                        bestUse: 'IT Park / Office',
+                        tags: ['High Visibility', 'Metro Access'],
+                        images: [
+                            "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&h=300&fit=crop",
+                            "https://images.unsplash.com/photo-1464938050520-ef2270bb8ce8?w=400&h=300&fit=crop"
+                        ]
+                    },
+                    {
+                        _id: 'dummy4',
+                        plotId: 'LOG-991-L',
+                        approvedArea: 45000,
+                        marketValuePerSqMeter: 3500,
+                        status: 'vacant',
+                        zoning: 'Logistics',
+                        connectivity: 'Direct Highway Access',
+                        bestUse: 'Cold Storage',
+                        tags: ['Large Frontage', 'Water Supply'],
+                        images: [
+                            "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=400&h=300&fit=crop",
+                            "https://images.unsplash.com/photo-1518780664697-55e3ad937233?w=400&h=300&fit=crop"
+                        ]
+                    }
+                ];
+                publicPlots = [...publicPlots, ...dummyPlots];
+            }
+
             setPlots(publicPlots);
         } catch (error) {
             console.error('Error fetching public plots:', error);
+            // Fallback dummy data if API fails
+            setPlots([
+                {
+                    _id: 'dummy1', plotId: 'IND-405-A', approvedArea: 15000, marketValuePerSqMeter: 5200, status: 'vacant',
+                    zoning: 'Industrial', connectivity: 'NH-48', bestUse: 'Manufacturing', tags: ['Corner Plot'],
+                    images: ["https://images.unsplash.com/photo-1599423300746-b62507ac97f5"]
+                }
+            ]);
         } finally {
             setLoading(false);
         }
@@ -91,14 +169,62 @@ const PublicDashboard = ({ lang = 'en', t = (s) => s }) => {
             {
                 label: 'Avg Land Price (₹/sqft)',
                 data: [4200, 4350, 4400, 4600, 4750, 4900],
-                borderColor: 'rgb(16, 185, 129)', // Emerald-500
-                backgroundColor: 'rgba(16, 185, 129, 0.5)',
+                borderColor: darkMode ? '#2dd4bf' : '#0d9488', // Teal-400 : Teal-600
+                backgroundColor: darkMode ? 'rgba(45, 212, 191, 0.5)' : 'rgba(13, 148, 136, 0.5)',
+                pointBackgroundColor: darkMode ? '#f0fdfa' : 'white',
                 tension: 0.3
             }
         ]
     };
 
-    if (loading) return <div className="p-8 text-center text-slate-500">Finding available land...</div>;
+    if (loading) return (
+        <div className="dashboard-content" style={{padding: '24px', maxWidth: '1200px', margin: '0 auto'}}>
+            <style>{`
+                /* Inline Skeleton CSS for simplicity if file not imported */
+                .skeleton {
+                    background: #e2e8f0;
+                    border-radius: 4px;
+                    position: relative;
+                    overflow: hidden;
+                }
+                .skeleton::after {
+                    content: "";
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    transform: translateX(-100%);
+                    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+                    animation: shimmer 1.5s infinite;
+                }
+                @keyframes shimmer { 100% { transform: translateX(100%); } }
+            `}</style>
+            
+            <div style={{display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '32px'}}>
+                <div>
+                    <h2 className="skeleton" style={{width: '200px', height: '32px', marginBottom: '20px'}}></h2>
+                    <div style={{display: 'grid', gap: '20px'}}>
+                        {[1, 2, 3].map(i => (
+                            <div key={i} className="plot-card-public" style={{padding: '20px', borderRadius: '12px', border: '1px solid #f1f5f9'}}>
+                                <div className="skeleton" style={{width: '60%', height: '24px', marginBottom: '8px'}}></div>
+                                <div className="skeleton" style={{width: '40%', height: '16px', marginBottom: '16px'}}></div>
+                                <div style={{display: 'flex', gap: '8px', marginBottom: '16px'}}>
+                                    <div className="skeleton" style={{width: '120px', height: '80px', borderRadius: '8px'}}></div>
+                                    <div className="skeleton" style={{width: '120px', height: '80px', borderRadius: '8px'}}></div>
+                                </div>
+                                <div className="skeleton" style={{width: '100%', height: '40px', borderRadius: '6px'}}></div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                <div>
+                    <div className="skeleton" style={{height: '200px', borderRadius: '12px', marginBottom: '32px'}}></div>
+                    <div className="skeleton" style={{height: '300px', borderRadius: '12px'}}></div>
+                </div>
+            </div>
+        </div>
+    );
 
     return (
         <div className="dashboard-content animate-fade-in" style={{padding: '24px', maxWidth: '1200px', margin: '0 auto', paddingBottom: '100px'}}>
@@ -178,9 +304,13 @@ const PublicDashboard = ({ lang = 'en', t = (s) => s }) => {
 
                                     {/* Image Carousel Mock */}
                                     <div style={{marginTop: '12px', marginBottom: '12px', overflowX: 'auto', display: 'flex', gap: '8px', paddingBottom: '4px'}}>
-                                         <img src="https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=200&h=120&fit=crop" style={{borderRadius: '8px', height: '80px', width: '120px', objectFit: 'cover'}} alt="Land 1" />
-                                         <img src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=200&h=120&fit=crop" style={{borderRadius: '8px', height: '80px', width: '120px', objectFit: 'cover'}} alt="Land 2" />
-                                         <img src="https://images.unsplash.com/photo-1444858291040-58f756a3bdd6?w=200&h=120&fit=crop" style={{borderRadius: '8px', height: '80px', width: '120px', objectFit: 'cover'}} alt="Land 3" />
+                                         {(plot.images || [
+                                             "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=200&h=120&fit=crop",
+                                             "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=200&h=120&fit=crop",
+                                             "https://images.unsplash.com/photo-1444858291040-58f756a3bdd6?w=200&h=120&fit=crop"
+                                         ]).map((img, idx) => (
+                                             <img key={idx} src={img} style={{borderRadius: '8px', height: '80px', width: '120px', objectFit: 'cover'}} alt="Land" />
+                                         ))}
                                     </div>
                                     
                                     <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '20px'}}>
@@ -198,6 +328,26 @@ const PublicDashboard = ({ lang = 'en', t = (s) => s }) => {
                                         </div>
                                     </div>
 
+                                    {/* New Info Section: Zoning, Connectivity, Tags */}
+                                    <div style={{marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #f1f5f9'}}>
+                                        <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px'}}>
+                                            <span style={{fontSize: '0.85rem', color: '#64748b'}}>🏗️ {plot.zoning || 'Industrial Phase 1'}</span>
+                                            <span style={{fontSize: '0.85rem', color: '#64748b'}}>🛣️ {plot.connectivity || 'Main Road'}</span>
+                                        </div>
+                                        <div style={{display: 'flex', flexWrap: 'wrap', gap: '8px'}}>
+                                            {plot.tags?.map((tag, i) => (
+                                                <span key={i} style={{
+                                                    fontSize: '0.75rem', background: '#e0f2fe', color: '#0284c7', 
+                                                    padding: '2px 8px', borderRadius: '4px', fontWeight: '500'
+                                                }}>
+                                                    {tag}
+                                                </span>
+                                            )) || (
+                                                <span style={{fontSize: '0.75rem', background: '#f1f5f9', color: '#64748b', padding: '2px 8px', borderRadius: '4px'}}>Standard Plot</span>
+                                            )}
+                                        </div>
+                                    </div>
+
                                     <div style={{marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                                         <div style={{display: 'flex', gap: '12px'}}>
                                             <span title="Road Access" style={{fontSize: '1.2rem'}}>🛣️</span>
@@ -209,8 +359,8 @@ const PublicDashboard = ({ lang = 'en', t = (s) => s }) => {
                                                 onClick={() => setShow360(plot)}
                                                 style={{
                                                     background: 'white',
-                                                    color: '#3b82f6',
-                                                    border: '1px solid #3b82f6',
+                                                    color: '#0d9488',
+                                                    border: '1px solid #0d9488',
                                                     padding: '8px 12px',
                                                     borderRadius: '6px',
                                                     fontWeight: '500',
@@ -220,7 +370,7 @@ const PublicDashboard = ({ lang = 'en', t = (s) => s }) => {
                                                 🔄 {t('view_360')}
                                             </button>
                                             <button style={{
-                                                background: '#3b82f6',
+                                                background: '#0d9488',
                                                 color: 'white',
                                                 border: 'none',
                                                 padding: '8px 16px',
@@ -273,7 +423,24 @@ const PublicDashboard = ({ lang = 'en', t = (s) => s }) => {
                     <div style={{background: 'white', borderRadius: '12px', padding: '24px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', marginBottom: '32px'}}>
                         <h3 style={{fontSize: '1.1rem', fontWeight: 'bold', color: '#1e293b', marginBottom: '16px'}}>{t('price_trend')}</h3>
                         <div style={{height: '200px'}}>
-                            <Line data={priceTrendData} options={{ maintainAspectRatio: false }} />
+                            <Line data={priceTrendData} options={{ 
+                                maintainAspectRatio: false,
+                                scales: {
+                                    x: {
+                                        grid: { color: darkMode ? '#334155' : '#e2e8f0' },
+                                        ticks: { color: darkMode ? '#94a3b8' : '#64748b' }
+                                    },
+                                    y: {
+                                        grid: { color: darkMode ? '#334155' : '#e2e8f0' },
+                                        ticks: { color: darkMode ? '#94a3b8' : '#64748b' }
+                                    }
+                                },
+                                plugins: {
+                                    legend: {
+                                        labels: { color: darkMode ? '#f1f5f9' : '#1e293b' }
+                                    }
+                                }
+                            }} />
                         </div>
                         <p style={{fontSize: '0.9rem', color: '#64748b', marginTop: '12px'}}>
                             {t('market_trend_desc')}
@@ -285,7 +452,7 @@ const PublicDashboard = ({ lang = 'en', t = (s) => s }) => {
                         <h3 style={{fontSize: '1.1rem', fontWeight: 'bold', color: '#1e293b', marginBottom: '16px'}}>{t('infra_updates')}</h3>
                         <ul style={{listStyle: 'none', padding: 0}}>
                             <li style={{marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid #f1f5f9'}}>
-                                <div style={{fontSize: '0.8rem', color: '#3b82f6', fontWeight: '600', marginBottom: '4px'}}>{t('new_tag')} • Feb 2026</div>
+                                <div style={{fontSize: '0.8rem', color: '#0d9488', fontWeight: '600', marginBottom: '4px'}}>{t('new_tag')} • Feb 2026</div>
                                 <div style={{fontWeight: '500', color: '#334155'}}>{t('update_1')}</div>
                             </li>
                              <li>
@@ -304,8 +471,8 @@ const PublicDashboard = ({ lang = 'en', t = (s) => s }) => {
                     <button 
                         onClick={() => setShowChat(true)}
                         style={{
-                            background: '#3b82f6', color: 'white', width: '60px', height: '60px', 
-                            borderRadius: '50%', border: 'none', boxShadow: '0 10px 25px rgba(59, 130, 246, 0.5)',
+                            background: '#0d9488', color: 'white', width: '60px', height: '60px', 
+                            borderRadius: '50%', border: 'none', boxShadow: '0 10px 25px rgba(13, 148, 136, 0.5)',
                             fontSize: '2rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
                         }}
                     >
@@ -318,7 +485,7 @@ const PublicDashboard = ({ lang = 'en', t = (s) => s }) => {
                         boxShadow: '0 10px 30px rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column',
                         overflow: 'hidden', border: '1px solid #e2e8f0'
                     }}>
-                        <div style={{background: '#3b82f6', color: 'white', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                        <div style={{background: '#0d9488', color: 'white', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                             <h3 style={{margin: 0, fontSize: '1rem'}}>{t('chat_title')}</h3>
                             <button onClick={() => setShowChat(false)} style={{background: 'none', border: 'none', color: 'white', fontSize: '1.2rem', cursor: 'pointer'}}>✕</button>
                         </div>
@@ -327,7 +494,7 @@ const PublicDashboard = ({ lang = 'en', t = (s) => s }) => {
                                 <div key={i} style={{marginBottom: '12px', textAlign: msg.type === 'user' ? 'right' : 'left'}}>
                                     <div style={{
                                         display: 'inline-block', padding: '8px 12px', borderRadius: '12px',
-                                        background: msg.type === 'user' ? '#3b82f6' : 'white',
+                                        background: msg.type === 'user' ? '#0d9488' : 'white',
                                         color: msg.type === 'user' ? 'white' : '#334155',
                                         border: msg.type === 'bot' ? '1px solid #e2e8f0' : 'none',
                                         maxWidth: '80%'
@@ -343,7 +510,7 @@ const PublicDashboard = ({ lang = 'en', t = (s) => s }) => {
                                 placeholder={t('chat_placeholder')} 
                                 style={{flex: 1, padding: '8px', borderRadius: '6px', border: '1px solid #d1d5db'}}
                             />
-                            <button type="submit" style={{background: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', padding: '0 12px', cursor: 'pointer'}}>➤</button>
+                            <button type="submit" style={{background: '#0d9488', color: 'white', border: 'none', borderRadius: '6px', padding: '0 12px', cursor: 'pointer'}}>➤</button>
                         </form>
                     </div>
                 )}
@@ -448,6 +615,117 @@ const PublicDashboard = ({ lang = 'en', t = (s) => s }) => {
                             <div style={{position: 'absolute', bottom: '20px', left: '20px', background: 'rgba(0,0,0,0.5)', color: 'white', padding: '8px', borderRadius: '4px'}}>
                                 {t('simulated_view')}
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Grievance Reporting Button */}
+            <button
+                onClick={() => setShowGrievanceModal(true)}
+                style={{
+                    position: 'fixed', bottom: '100px', right: '24px', zIndex: 99,
+                    background: '#ef4444', color: 'white', width: '60px', height: '60px',
+                    borderRadius: '50%', border: 'none', boxShadow: '0 10px 25px rgba(239, 68, 68, 0.5)',
+                    fontSize: '1.5rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}
+                title={t('report_issue')}
+            >
+                📢
+            </button>
+
+            {/* Grievance Reporting Modal */}
+            {showGrievanceModal && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+                    zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }} onClick={() => setShowGrievanceModal(false)}>
+                    <div style={{
+                        background: 'white', padding: '0', borderRadius: '16px',
+                        width: '500px', maxWidth: '90%', overflow: 'hidden',
+                        boxShadow: '0 20px 50px rgba(0,0,0,0.2)'
+                    }} onClick={e => e.stopPropagation()}>
+                        
+                        {/* Header */}
+                        <div style={{
+                            background: '#ef4444', padding: '20px', color: 'white',
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                        }}>
+                            <h2 style={{margin: 0, fontSize: '1.25rem'}}>📢 {t('report_violation')}</h2>
+                            <button onClick={() => setShowGrievanceModal(false)} style={{background: 'none', border: 'none', color: 'white', fontSize: '1.5rem', cursor: 'pointer'}}>✕</button>
+                        </div>
+
+                        {/* Form */}
+                        <div style={{padding: '24px'}}>
+                            {!grievanceSubmitted ? (
+                                <>
+                                    <p style={{marginBottom: '20px', color: '#4b5563', fontSize: '0.95rem'}}>
+                                        {t('report_desc')}
+                                    </p>
+
+                                    <div style={{marginBottom: '16px'}}>
+                                        <label style={{display: 'block', marginBottom: '8px', fontWeight: '500', color: '#374151'}}>{t('location')}</label>
+                                        <div style={{display: 'flex', gap: '8px'}}>
+                                            <input 
+                                                type="text" 
+                                                value="Current Location (Lat: 28.6139, Long: 77.2090)" 
+                                                disabled 
+                                                style={{flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', background: '#f3f4f6'}}
+                                            />
+                                            <button style={{padding: '0 12px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer'}}>📍</button>
+                                        </div>
+                                    </div>
+
+                                    <div style={{marginBottom: '16px'}}>
+                                        <label style={{display: 'block', marginBottom: '8px', fontWeight: '500', color: '#374151'}}>{t('violation_type')}</label>
+                                        <select style={{width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db'}}>
+                                            <option>{t('select_type')}</option>
+                                            <option>{t('illegal_cons')}</option>
+                                            <option>{t('encroachment')}</option>
+                                            <option>{t('dumping')}</option>
+                                        </select>
+                                    </div>
+
+                                    <div style={{marginBottom: '16px'}}>
+                                        <label style={{display: 'block', marginBottom: '8px', fontWeight: '500', color: '#374151'}}>{t('description')}</label>
+                                        <textarea 
+                                            rows="3" 
+                                            placeholder={t('desc_placeholder')}
+                                            style={{width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db'}}
+                                        ></textarea>
+                                    </div>
+
+                                    <div style={{marginBottom: '24px'}}>
+                                        <label style={{display: 'block', marginBottom: '8px', fontWeight: '500', color: '#374151'}}>{t('evidence')}</label>
+                                        <div style={{border: '2px dashed #d1d5db', borderRadius: '8px', padding: '20px', textAlign: 'center', color: '#6b7280', cursor: 'pointer', background: '#f9fafb'}}>
+                                            📸 {t('upload_photo')}
+                                        </div>
+                                    </div>
+
+                                    <button 
+                                        onClick={() => setGrievanceSubmitted(true)}
+                                        style={{
+                                            width: '100%', padding: '12px', background: '#ef4444', color: 'white', 
+                                            border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer',
+                                            boxShadow: '0 4px 6px rgba(239, 68, 68, 0.2)'
+                                        }}
+                                    >
+                                        {t('submit_report')}
+                                    </button>
+                                </>
+                            ) : (
+                                <div style={{textAlign: 'center', padding: '20px 0'}}>
+                                    <div style={{fontSize: '4rem', marginBottom: '16px'}}>✅</div>
+                                    <h3 style={{fontSize: '1.5rem', color: '#16a34a', marginBottom: '8px'}}>{t('report_submitted')}</h3>
+                                    <p style={{color: '#4b5563', marginBottom: '24px'}}>{t('report_id')}: #GR-2026-8842</p>
+                                    <button 
+                                        onClick={() => {setShowGrievanceModal(false); setGrievanceSubmitted(false);}}
+                                        style={{padding: '8px 24px', background: '#f3f4f6', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '500'}}
+                                    >
+                                        {t('close')}
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

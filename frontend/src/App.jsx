@@ -8,6 +8,34 @@ import { plotAPI } from './services/api';
 import { translations } from './utils/translations';
 import './App.css';
 
+const DataIsland = () => {
+    const [stats, setStats] = useState({ systems: 'Online', alerts: 0, drones: 2 });
+
+    return (
+        <div className="data-island hidden md:flex" style={{
+            position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)',
+            zIndex: 9999, background: '#0f172a', padding: '8px 24px', borderRadius: '50px',
+            color: 'white', alignItems: 'center', gap: '24px', boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
+            border: '1px solid #334155'
+        }}>
+            <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                <div style={{width: '8px', height: '8px', background: '#22c55e', borderRadius: '50%', boxShadow: '0 0 10px #22c55e'}}></div>
+                <span style={{fontSize: '0.85rem', fontWeight: '600'}}>Systems Normal</span>
+            </div>
+            <div style={{width: '1px', height: '16px', background: '#334155'}}></div>
+            <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                <span style={{fontSize: '1rem'}}>🚁</span>
+                <span style={{fontSize: '0.85rem', fontWeight: '600'}}>2 Active</span>
+            </div>
+            <div style={{width: '1px', height: '16px', background: '#334155'}}></div>
+            <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                <span style={{fontSize: '1rem'}}>🛡️</span>
+                <span style={{fontSize: '0.85rem', fontWeight: '600'}}>Secured</span>
+            </div>
+        </div>
+    );
+};
+
 function App() {
   const [plots, setPlots] = useState([]);
   const [selectedPlot, setSelectedPlot] = useState(null);
@@ -16,6 +44,29 @@ function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [userRole, setUserRole] = useState('govt'); // 'govt' or 'public'
   const [lang, setLang] = useState('en'); // 'en' or 'hi'
+  const [darkMode, setDarkMode] = useState(false);
+
+  // Initialize theme from localStorage
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+        setDarkMode(true);
+        document.documentElement.classList.add('dark');
+    }
+  }, []);
+
+  // Toggle theme handler
+  const toggleTheme = () => {
+    const newMode = !darkMode;
+    setDarkMode(newMode);
+    if (newMode) {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+    } else {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+    }
+  };
 
   const t = (key) => translations[lang][key] || key;
 
@@ -88,6 +139,25 @@ function App() {
             </div>
             
             <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+                {/* Dark Mode Toggle */}
+                <button
+                    onClick={toggleTheme}
+                    style={{
+                        padding: '6px 10px',
+                        border: '1px solid #cbd5e1',
+                        background: darkMode ? '#1e293b' : 'white',
+                        color: darkMode ? '#fbbf24' : '#64748b',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '1.1rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }}
+                    title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                >
+                    {darkMode ? '☀️' : '🌒'}
+                </button>
                 {/* Language Toggle */}
                 <button
                     onClick={() => setLang(lang === 'en' ? 'hi' : 'en')}
@@ -156,7 +226,7 @@ function App() {
           
           {/* Public View: Dedicated Dashboard */}
           {userRole === 'public' ? (
-              <PublicDashboard lang={lang} t={t} />
+              <PublicDashboard lang={lang} t={t} darkMode={darkMode} />
           ) : (
             /* Government View: Full Functionality */
             <>
@@ -192,7 +262,7 @@ function App() {
                 ) : (
                     <>
                     {activeTab === 'dashboard' && (
-                        <GovernmentDashboard onRefresh={fetchPlots} lang={lang} t={t} />
+                        <GovernmentDashboard onRefresh={fetchPlots} lang={lang} t={t} darkMode={darkMode} />
                     )}
 
                     {activeTab === 'map' && (
@@ -286,6 +356,7 @@ function App() {
           onAnalysisComplete={handleAnalysisComplete}
           lang={lang}
           t={t}
+          darkMode={darkMode}
         />
       )}
 

@@ -5,8 +5,9 @@
 }
 
 /* Header */
+/* Header */
 .app-header {
-  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  background: linear-gradient(135deg, #115e59 0%, #134e4a 100%); /* Teal-800 to Teal-900 */
   color: white;
   padding: 1.5rem 0;
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);

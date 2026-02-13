@@ -802,15 +802,20 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
                     className={`toggle-btn ${isDrawMode ? 'active' : ''}`}
                     onClick={(e) => {
                         e.stopPropagation();
-                        if (isDrawMode) {
-                            handleCancelDraw();
-                        } else {
-                            setIsDrawMode(true);
+                        // If we were analyzing, clear it first
+                        if (isAnalyzingCustom || showAnalysisModal) {
+                            handleClearAnalysis();
+                        }
+                        setIsDrawMode(!isDrawMode);
+                        // Reset points if starting new
+                        if (!isDrawMode) {
                             setDrawPoints([]);
+                            setShowCoordinates(false);
                         }
                     }}
+                    title="Draw Custom Area"
                 >
-                    ✏️ Draw
+                    ✏️ {isDrawMode ? 'Cancel' : 'Draw'}
                 </button>
                 <div style={{ width: '1px', background: '#e2e8f0', margin: '0 4px' }}></div>
                 <button
