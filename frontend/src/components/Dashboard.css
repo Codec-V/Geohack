@@ -235,3 +235,103 @@
     grid-template-columns: 1fr;
   }
 }
+/* Financial Stats */
+.financial-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.fin-stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px dashed #e2e8f0;
+    padding-bottom: 8px;
+}
+
+.fin-label {
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+.fin-value {
+    font-weight: 600;
+    color: #1e293b;
+    font-size: 1.1rem;
+}
+
+.fin-value.loss {
+    color: #ef4444; /* Red color for loss */
+}
+
+.fin-note {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-top: 4px;
+    font-style: italic;
+}
+
+/* Comparison Bars */
+.comparison-bar-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 10px;
+}
+
+.comparison-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.comp-label {
+    font-size: 0.85rem;
+    color: #475569;
+    font-weight: 500;
+}
+
+.comp-bar-wrapper {
+    position: relative;
+    height: 24px;
+    background: #f1f5f9;
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+}
+
+.comp-bar {
+    height: 100%;
+    transition: width 1s ease-in-out;
+}
+
+.comp-bar.approved {
+    background-color: #3b82f6; /* Blue for approved */
+}
+
+.comp-bar.utilized {
+    background-color: #10b981; /* Green for utilized */
+}
+
+.comp-bar.unused {
+    background-color: #f59e0b; /* Amber/Orange for unused */
+}
+
+.comp-value {
+    position: absolute;
+    right: 8px;
+    font-size: 0.8rem;
+    color: #334155;
+    font-weight: 600;
+    text-shadow: 0 0 2px rgba(255,255,255,0.8);
+    z-index: 1;
+}
+
+.comp-value-text {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #334155;
+}

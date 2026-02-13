@@ -31,6 +31,11 @@ const plotSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  // Market value for financial calculations
+  marketValuePerSqMeter: {
+    type: Number,
+    default: 5000 // Default value if not specified
+  },
   // Latest analysis results
   latestAnalysis: {
     timestamp: Date,

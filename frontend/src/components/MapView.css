@@ -1,4 +1,4 @@
-.map-container {
+ .map-container {
     height: 75vh;
     width: 100%;
     position: relative;
@@ -207,30 +207,40 @@
 /* Instructions */
 .map-instructions {
     position: absolute;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
+    top: 80px;
+    right: 20px;
+    left: auto;
+    transform: none;
     z-index: 1000;
     background: white;
-    padding: 8px 16px;
-    border-radius: 50px;
+    padding: 12px;
+    border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     font-size: 0.9rem;
     color: #1f2937;
     display: flex;
-    gap: 12px;
-    align-items: center;
-    border: 2px solid #3b82f6;
-    animation: slideDown 0.3s ease-out;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+    border-left: 4px solid #3b82f6;
+    border-top: none;
+    border-right: none;
+    border-bottom: none;
+    animation: slideInRight 0.3s ease-out;
+    max-width: 250px;
 }
 
-@keyframes slideDown {
+.map-instructions span {
+    text-align: right;
+}
+
+@keyframes slideInRight {
     from {
-        top: -50px;
+        right: -250px;
         opacity: 0;
     }
     to {
-        top: 20px;
+        right: 20px;
         opacity: 1;
     }
 }

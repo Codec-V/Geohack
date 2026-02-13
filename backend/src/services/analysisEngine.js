@@ -286,9 +286,30 @@ export async function analyzePlot(plotData, options = {}) {
             totalArea
         );
 
+        // Step 6: Financial Impact Analysis
+        // Unused land = Total Area - Built Up Area (excluding deviation)
+        // OR simply derived from the vacancy percentage
+        const unusedLandArea = usageAnalysis.classification.vacant.area;
+
+        // Financial Loss Calculation
+        // Formula: Unused Area * Market Value * Factor (e.g. 0.05% daily rental yield loss)
+        // For government, this could be "Blocked Capital" or "Potential Lease Revenue Lost"
+        const marketValueRate = options.marketValuePerSqMeter || 5000;
+        const totalLandValue = totalArea * marketValueRate;
+        const unusedLandValue = unusedLandArea * marketValueRate;
+
+        // Estimated daily loss (assuming 10% annual return expectation on land value / 365)
+        const estimatedDailyLoss = (unusedLandValue * 0.10) / 365;
+
         return {
             timestamp: new Date(),
             builtUpArea: builtUpAnalysis.builtUpArea,
+            unusedLandArea,
+            financialLoss: {
+                totalValue: unusedLandValue,
+                dailyLoss: estimatedDailyLoss,
+                marketRate: marketValueRate
+            },
             deviationArea: deviationAnalysis.deviationArea,
             deviationPercentage: deviationAnalysis.deviationPercentage,
             isVacant,

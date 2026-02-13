@@ -204,7 +204,8 @@ router.post('/:id/analyze', async (req, res) => {
             approvedArea: plot.approvedArea,
             simulatedBuiltUpPercentage: req.body.simulatedBuiltUpPercentage || 45
         }, {
-            satelliteImageUrl: satelliteData.imageUrl
+            satelliteImageUrl: satelliteData.imageUrl,
+            marketValuePerSqMeter: plot.marketValuePerSqMeter
         });
 
         // Update plot with analysis results
@@ -303,7 +304,35 @@ router.get('/stats/summary', async (req, res) => {
                 mediumRiskPlots,
                 lowRiskPlots,
                 violationsCount,
-                vacantPlots
+                vacantPlots,
+                financialStats: {
+                    totalUnusedLandArea: plots.reduce((acc, p) => {
+                        // Use stored value if available
+                        if (p.latestAnalysis?.unusedLandArea) return acc + p.latestAnalysis.unusedLandArea;
+
+                        // Fallback: Calculate from builtUpPercentage
+                        const builtUpPct = p.latestAnalysis?.builtUpPercentage || 0;
+                        const approvedArea = p.approvedArea || 0;
+                        const unusedArea = approvedArea * (1 - (builtUpPct / 100));
+                        return acc + unusedArea;
+                    }, 0),
+
+                    totalDailyLoss: plots.reduce((acc, p) => {
+                        // Use stored value if available
+                        if (p.latestAnalysis?.financialLoss?.dailyLoss) return acc + p.latestAnalysis.financialLoss.dailyLoss;
+
+                        // Fallback: Calculate from unused area (derived)
+                        const builtUpPct = p.latestAnalysis?.builtUpPercentage || 0;
+                        const approvedArea = p.approvedArea || 0;
+                        const unusedArea = approvedArea * (1 - (builtUpPct / 100));
+
+                        const marketRate = p.marketValuePerSqMeter || 5000;
+                        const totalValue = unusedArea * marketRate;
+                        const dailyLoss = (totalValue * 0.10) / 365;
+
+                        return acc + dailyLoss;
+                    }, 0)
+                }
             }
         });
     } catch (error) {

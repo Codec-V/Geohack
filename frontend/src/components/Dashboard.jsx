@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { plotAPI } from '../services/api';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
-import { Doughnut } from 'react-chartjs-2';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale } from 'chart.js';
+import { Doughnut, Bar } from 'react-chartjs-2';
 import './Dashboard.css';
 
-ChartJS.register(ArcElement, Tooltip, Legend);
+ChartJS.register(ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale);
 
 const Dashboard = ({ onRefresh }) => {
     const [stats, setStats] = useState(null);
@@ -48,16 +48,36 @@ const Dashboard = ({ onRefresh }) => {
     const closedPlots = stats?.vacantPlots || 0; // Assuming vacant = closed for now
     const runningPlots = totalPlots - closedPlots;
     
+    // Risk Analysis Data
+    const highRiskPlots = plots.filter(p => (p.latestAnalysis?.finalRiskScore || 0) >= 70).length;
+    const mediumRiskPlots = plots.filter(p => {
+        const score = p.latestAnalysis?.finalRiskScore || 0;
+        return score >= 40 && score < 70;
+    }).length;
+    const lowRiskPlots = plots.filter(p => (p.latestAnalysis?.finalRiskScore || 0) < 40).length;
+
     // Chart Data
     const chartData = {
-        labels: ['Running', 'Closed'],
+        labels: ['Running (Compliant)', 'Closed / Vacant'],
         datasets: [
             {
                 data: [runningPlots, closedPlots],
-                backgroundColor: ['#a5b4fc', '#6366f1'], // Light blue, Primary Blue
+                backgroundColor: ['#22c55e', '#ef4444'], // Green, Red
                 borderWidth: 0,
             },
         ],
+    };
+
+    const riskChartData = {
+        labels: ['Low Risk', 'Medium Risk', 'High Risk'],
+        datasets: [
+            {
+                label: 'Number of Plots',
+                data: [lowRiskPlots, mediumRiskPlots, highRiskPlots],
+                backgroundColor: ['#22c55e', '#f59e0b', '#dc2626'],
+                borderRadius: 4,
+            }
+        ]
     };
 
     const chartOptions = {
@@ -67,7 +87,18 @@ const Dashboard = ({ onRefresh }) => {
                 labels: { usePointStyle: true, boxWidth: 8 }
             }
         },
-        cutout: '60%',
+        cutout: '70%',
+        maintainAspectRatio: false
+    };
+
+    const barOptions = {
+        plugins: {
+            legend: { display: false }
+        },
+        scales: {
+            y: { beginAtZero: true, grid: { display: false } },
+            x: { grid: { display: false } }
+        },
         maintainAspectRatio: false
     };
 
@@ -82,34 +113,46 @@ const Dashboard = ({ onRefresh }) => {
         <div className="dashboard">
             <header className="dashboard-header">
                 <div>
-                    <h1>Site Visit on {currentDate}</h1>
+                    <h1>CSIDC Land Monitoring Dashboard</h1>
+                    <p className="subtitle">Official Site Visit Report • {currentDate}</p>
                 </div>
-                <div className="logo-badge">🛡️</div>
+                <div style={{display: 'flex', gap: '12px'}}>
+                    <button className="btn-print" onClick={() => window.print()} style={{
+                        padding: '8px 16px', 
+                        background: '#334155', 
+                        color: 'white', 
+                        border: 'none', 
+                        borderRadius: '6px', 
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                    }}>
+                        <span>🖨️</span> Print Report
+                    </button>
+                    <div className="logo-badge">🛡️</div>
+                </div>
             </header>
 
-            <div className="dashboard-top-grid">
+
+
                 {/* 1. Key Insights */}
                 <div className="dashboard-card">
-                    <h3>Key Insights</h3>
+                    <h3>Executive Summary & Insights</h3>
                     <ul className="insights-list">
                         <li>
-                            Running plots constitute approximately {Math.round((runningPlots / totalPlots) * 100)}% of the total, highlighting active utilization.
+                            <strong>Utilization Rate:</strong> {Math.round((runningPlots / (totalPlots || 1)) * 100)}% of allocated plots are currently operational.
                         </li>
                         <li>
-                            Closed plots make up only about {Math.round((closedPlots / totalPlots) * 100)}%, suggesting high occupancy rates.
+                            <strong>Vacancy Alert:</strong> {closedPlots} plots are currently closed or vacant, representing immediate opportunity for reallocation.
                         </li>
                         <li>
-                            {stats?.highRiskPlots || 0} plots identified as high risk requiring immediate attention.
+                            <strong>Critical Risk:</strong> {highRiskPlots} plots have been flagged with High Violation Scores (Risk &gt; 70).
+                        </li>
+                        <li>
+                            <strong>Fiscal Impact:</strong> Estimated daily revenue loss of ₹{Math.round(stats?.financialStats?.totalDailyLoss || 0).toLocaleString()} due to non-operational land assets.
                         </li>
                     </ul>
-                </div>
-
-                {/* 2. Distribution Pie Chart */}
-                <div className="dashboard-card">
-                    <h3>Distribution of Plot Status</h3>
-                    <div className="chart-container">
-                        <Doughnut data={chartData} options={chartOptions} />
-                    </div>
                 </div>
 
                 {/* 3. KPI Cards */}
@@ -131,7 +174,67 @@ const Dashboard = ({ onRefresh }) => {
                     </div>
                 </div>
 
-                {/* 4. Map Placeholder */}
+                {/* 2. Charts & Financial Grid */}
+                <div style={{display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px', marginBottom: '24px'}}>
+                    
+                    {/* Compliance Charts */}
+                    <div className="dashboard-card" style={{marginBottom: 0}}>
+                        <h3>Compliance Overview</h3>
+                        <div style={{display: 'flex', height: '100%', gap: '16px'}}>
+                            <div className="chart-container" style={{flex: 1}}>
+                                <Doughnut data={chartData} options={chartOptions} />
+                                <div style={{textAlign: 'center', marginTop: '8px', fontSize: '12px', color: '#64748b'}}>Operational Status</div>
+                            </div>
+                            <div className="chart-container" style={{flex: 1}}>
+                                <Bar data={riskChartData} options={barOptions} />
+                                <div style={{textAlign: 'center', marginTop: '8px', fontSize: '12px', color: '#64748b'}}>Risk Distribution</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Financial Impact Analysis */}
+                    <div className="dashboard-card" style={{marginBottom: 0}}>
+                         <h3>Financial Impact Analysis</h3>
+                         <div className="financial-stats">
+                            <div className="fin-stat-row">
+                                <span className="fin-label">Unused / Encroached Area</span>
+                                <span className="fin-value">
+                                    {Math.round((stats?.financialStats?.totalUnusedLandArea || 0) / 10.764).toLocaleString()} sq m
+                                </span>
+                            </div>
+                            <div className="fin-stat-row">
+                                <span className="fin-label">Daily Opportunity Cost</span>
+                                <span className="fin-value loss">
+                                    ₹{Math.round(stats?.financialStats?.totalDailyLoss || 0).toLocaleString()}
+                                </span>
+                            </div>
+                            <div className="fin-note">
+                                *Estimated revenue loss based on current market value and potential lease yield of stagnant assets.
+                            </div>
+                         </div>
+                    </div>
+                </div>
+
+                {/* 3. KPI Cards Row */}
+                <div className="dashboard-card" style={{marginBottom: '24px', display: 'flex', justifyContent: 'space-around', gap: '20px'}}>
+                    <div className="kpi-card total-plots" style={{flex: 1, border: 'none', background: '#f8fafc'}}>
+                        <div className="kpi-icon">🏭</div>
+                        <span className="kpi-value">{totalPlots}</span>
+                        <span className="kpi-label">Total Plots</span>
+                    </div>
+                    <div className="kpi-card running-plots" style={{flex: 1, border: 'none', background: '#f8fafc'}}>
+                        <div className="kpi-icon">⚡</div>
+                        <span className="kpi-value">{runningPlots}</span>
+                        <span className="kpi-label">Running</span>
+                    </div>
+                    <div className="kpi-card closed-plots" style={{flex: 1, border: 'none', background: '#f8fafc'}}>
+                        <div className="kpi-icon">🚫</div>
+                        <span className="kpi-value">{closedPlots}</span>
+                        <span className="kpi-label">Closed</span>
+                    </div>
+                </div>
+
+                {/* 5. Map Placeholder */}
                 <div className="dashboard-card" style={{ padding: 0, overflow: 'hidden' }}>
                     <div className="map-preview">
                        {/* Placeholder for map image or mini-map component */}
@@ -149,7 +252,45 @@ const Dashboard = ({ onRefresh }) => {
                        </div>
                     </div>
                 </div>
+
+
+            {/* NEW: Land Use Comparison Section */}
+            <div className="comparison-section" style={{marginTop: '24px', marginBottom: '24px'}}>
+                <div className="dashboard-card">
+                    <h3>Land Use Efficiency Report: Allocation vs. Utilization</h3>
+                    <div className="comparison-bar-container">
+                        <div className="comparison-row">
+                             <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '4px'}}>
+                                <span className="comp-label">Total Allocated Area (CSIDC Record)</span>
+                                <span className="comp-value-text">{totalArea.toLocaleString()} sq ft</span>
+                             </div>
+                             <div className="comp-bar-wrapper">
+                                 <div className="comp-bar approved" style={{width: '100%'}}></div>
+                             </div>
+                        </div>
+                        <div className="comparison-row">
+                             <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '4px'}}>
+                                <span className="comp-label">Effective Utilized Area</span>
+                                <span className="comp-value-text">{(totalArea - (stats?.financialStats?.totalUnusedLandArea * 10.764 || 0)).toLocaleString(undefined, {maximumFractionDigits: 0})} sq ft</span>
+                             </div>
+                             <div className="comp-bar-wrapper">
+                                 <div className="comp-bar utilized" style={{width: `${(totalArea > 0 && stats?.analyzedPlots > 0 ? ((totalArea - (stats?.financialStats?.totalUnusedLandArea * 10.764 || 0)) / totalArea) * 100 : 0)}%`}}></div>
+                             </div>
+                        </div>
+                        <div className="comparison-row">
+                             <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '4px'}}>
+                                <span className="comp-label">Disputed / Unused Area</span>
+                                <span className="comp-value-text">{(stats?.financialStats?.totalUnusedLandArea * 10.764 || 0).toLocaleString(undefined, {maximumFractionDigits: 0})} sq ft</span>
+                             </div>
+                             <div className="comp-bar-wrapper">
+                                 <div className="comp-bar unused" style={{width: `${(totalArea > 0 && stats?.analyzedPlots > 0 ? ((stats?.financialStats?.totalUnusedLandArea * 10.764 || 0) / totalArea) * 100 : 0)}%`}}></div>
+                             </div>
+                        </div>
+                    </div>
+                </div>
             </div>
+
+
 
             {/* 5. Largest Plots Table */}
             <div className="table-section">
