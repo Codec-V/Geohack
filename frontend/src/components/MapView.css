@@ -244,3 +244,8 @@
         opacity: 1;
     }
 }
+
+/* Force disable interaction on map features when in draw mode */
+.draw-mode-active path.leaflet-interactive {
+    pointer-events: none !important;
+}

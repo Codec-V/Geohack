@@ -15,6 +15,13 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
     const [drawPoints, setDrawPoints] = useState([]);
     const [isAnalyzingCustom, setIsAnalyzingCustom] = useState(false);
 
+    // Draw mode effect to close popups
+    useEffect(() => {
+        if (isDrawMode && mapRef.current) {
+            mapRef.current.closePopup();
+        }
+    }, [isDrawMode]);
+
     // Search state
     const [searchQuery, setSearchQuery] = useState('');
     const [suggestions, setSuggestions] = useState([]);
@@ -190,7 +197,8 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
                 fillOpacity: 0.6,
                 color: getUsageColor(feature.properties.usageType),
                 weight: 2,
-                opacity: 0.8
+                opacity: 0.8,
+                interactive: !isDrawMode // Disable interaction in draw mode
             };
         }
 
@@ -202,7 +210,8 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
             fillOpacity: selectedPlot?._id === feature.properties.id ? 0.7 : 0.5,
             color: getRiskColor(riskScore),
             weight: selectedPlot?._id === feature.properties.id ? 3 : 2,
-            opacity: 1
+            opacity: 1,
+            interactive: !isDrawMode // Disable interaction in draw mode
         };
     };
 
@@ -422,6 +431,7 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
             </div>
 
             <MapContainer
+                className={`leaflet-container ${isDrawMode ? 'draw-mode-active' : ''}`}
                 center={center}
                 zoom={zoom}
                 style={{ height: '100%', width: '100%', cursor: isDrawMode ? 'crosshair' : 'grab' }}
@@ -449,7 +459,7 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
                 {/* Render main plot boundaries */}
                 {plots.length > 0 && (
                     <GeoJSON
-                        key={JSON.stringify(plotsGeoJSON)}
+                        key={`${JSON.stringify(plotsGeoJSON)}-${isDrawMode}`}
                         data={plotsGeoJSON}
                         style={plotStyle}
                         onEachFeature={onEachFeature}
@@ -459,7 +469,7 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
                 {/* Render usage zones on top */}
                 {allUsageZones.features.length > 0 && (
                     <GeoJSON
-                        key={`usage-zones-${JSON.stringify(allUsageZones)}`}
+                        key={`usage-zones-${JSON.stringify(allUsageZones)}-${isDrawMode}`}
                         data={allUsageZones}
                         style={plotStyle}
                         onEachFeature={onEachFeature}
