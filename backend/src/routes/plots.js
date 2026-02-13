@@ -145,8 +145,71 @@ router.post('/analyze-custom', async (req, res) => {
         const satelliteData = await getLatestCloudFreeImagery(geometry);
 
         // Run analysis
-        // For custom areas, we assume approved area = actual area (no deviation check against separate boundary)
         // Or we could simulate deviation if valid boundary input was provided, but for drawing, usually we just analyze usage.
+
+        // --- Overlap Analysis (New Feature) ---
+        // Check if drawn area overlaps with any existing "Vacant" (Yellow) plots
+        const allPlots = await Plot.find({});
+        let totalOverlappingVaantArea = 0;
+        const overlappingPlots = [];
+
+        // Convert drawn geometry to turf polygon
+        const drawnPoly = turf.polygon(geometry.coordinates);
+
+        for (const p of allPlots) {
+            // Check if plot is vacant (Yellow/Red)
+            // Includes "Vacant" (isVacant=true) OR High Risk (Red) OR Medium Risk (Yellow)
+            const riskScore = p.latestAnalysis?.finalRiskScore || 0;
+            const isVacantOrRisky = p.latestAnalysis?.isVacant || (riskScore >= 40);
+
+            if (isVacantOrRisky && p.boundary && p.boundary.coordinates) {
+                try {
+                    const plotPoly = turf.polygon(p.boundary.coordinates);
+
+                    // Check for intersection
+                    // Support for Turf v7+ which takes two arguments
+                    const intersection = turf.intersect(drawnPoly, plotPoly);
+
+                    if (intersection) {
+                        const overlapArea = turf.area(intersection);
+                        if (overlapArea > 0) {
+                            totalOverlappingVaantArea += overlapArea;
+                            overlappingPlots.push({
+                                id: p._id,
+                                name: p.name,
+                                plotId: p.plotId,
+                                overlapArea: overlapArea,
+                                riskScore: riskScore
+                            });
+                        }
+                    }
+                } catch (err) {
+                    // Fallback for older Turf versions or other errors
+                    try {
+                        const plotPoly = turf.polygon(p.boundary.coordinates);
+                        const intersection = turf.intersect(turf.featureCollection([drawnPoly, plotPoly]));
+                        if (intersection) {
+                            const overlapArea = turf.area(intersection);
+                            if (overlapArea > 0) {
+                                totalOverlappingVaantArea += overlapArea;
+                                overlappingPlots.push({
+                                    id: p._id,
+                                    name: p.name,
+                                    plotId: p.plotId,
+                                    overlapArea: overlapArea,
+                                    riskScore: riskScore
+                                });
+                            }
+                        }
+                    } catch (fallbackErr) {
+                        console.warn(`Error checking intersection for plot ${p.plotId}:`, err);
+                    }
+                }
+            }
+        }
+
+        const overlapPercentage = area > 0 ? (totalOverlappingVaantArea / area) * 100 : 0;
+
         const analysisResult = await analyzePlot({
             boundary: geometry,
             approvedArea: area,
@@ -154,6 +217,13 @@ router.post('/analyze-custom', async (req, res) => {
         }, {
             satelliteImageUrl: satelliteData.imageUrl
         });
+
+        // Inject overlap data into result
+        analysisResult.overlapAnalysis = {
+            totalOverlappingVaantArea,
+            overlapPercentage,
+            overlappingPlots
+        };
 
         // Construct a temporary plot object for the frontend to display
         const tempPlot = {
