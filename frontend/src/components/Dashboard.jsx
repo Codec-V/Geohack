@@ -80,6 +80,48 @@ const Dashboard = ({ onRefresh }) => {
         ]
     };
 
+    // Encroachment & Violations Chart Data
+    const violationData = plots.reduce((acc, plot) => {
+        if (plot.latestAnalysis) {
+            acc.boundaryViolations += plot.latestAnalysis.boundaryViolationScore || 0;
+            acc.unauthorizedConstruction += plot.latestAnalysis.unauthorizedConstructionScore || 0;
+            acc.count++;
+        }
+        return acc;
+    }, { boundaryViolations: 0, unauthorizedConstruction: 0, count: 0 });
+
+    const avgBoundaryViolation = violationData.count > 0 ? violationData.boundaryViolations / violationData.count : 0;
+    const avgUnauthorizedConstruction = violationData.count > 0 ? violationData.unauthorizedConstruction / violationData.count : 0;
+
+    const violationChartData = {
+        labels: ['Boundary Violations', 'Unauthorized Construction', 'High Risk Plots'],
+        datasets: [
+            {
+                label: 'Violation Metrics',
+                data: [avgBoundaryViolation.toFixed(1), avgUnauthorizedConstruction.toFixed(1), highRiskPlots],
+                backgroundColor: ['#f59e0b', '#dc2626', '#991b1b'],
+                borderRadius: 4,
+            }
+        ]
+    };
+
+    // Financial Loss Chart Data
+    const financialChartData = {
+        labels: ['Daily Loss', 'Monthly Loss', 'Yearly Loss'],
+        datasets: [
+            {
+                label: 'Financial Impact (₹)',
+                data: [
+                    Math.round(stats?.financialStats?.totalDailyLoss || 0),
+                    Math.round((stats?.financialStats?.totalDailyLoss || 0) * 30),
+                    Math.round((stats?.financialStats?.totalDailyLoss || 0) * 365)
+                ],
+                backgroundColor: ['#ef4444', '#dc2626', '#991b1b'],
+                borderRadius: 4,
+            }
+        ]
+    };
+
     const chartOptions = {
         plugins: {
             legend: {
@@ -174,65 +216,87 @@ const Dashboard = ({ onRefresh }) => {
                     </div>
                 </div>
 
-                {/* 2. Charts & Financial Grid */}
-                <div style={{display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px', marginBottom: '24px'}}>
+                {/* Charts Section - 2x2 Grid */}
+                <div style={{display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px', marginBottom: '24px'}}>
                     
-                    {/* Compliance Charts */}
+                    {/* Top Left: Compliance Doughnut */}
                     <div className="dashboard-card" style={{marginBottom: 0}}>
-                        <h3>Compliance Overview</h3>
-                        <div style={{display: 'flex', height: '100%', gap: '16px'}}>
-                            <div className="chart-container" style={{flex: 1}}>
-                                <Doughnut data={chartData} options={chartOptions} />
-                                <div style={{textAlign: 'center', marginTop: '8px', fontSize: '12px', color: '#64748b'}}>Operational Status</div>
-                            </div>
-                            <div className="chart-container" style={{flex: 1}}>
-                                <Bar data={riskChartData} options={barOptions} />
-                                <div style={{textAlign: 'center', marginTop: '8px', fontSize: '12px', color: '#64748b'}}>Risk Distribution</div>
-                            </div>
+                        <h3>📊 Operational Status</h3>
+                        <div className="chart-container" style={{height: '250px'}}>
+                            <Doughnut data={chartData} options={chartOptions} />
+                        </div>
+                        <div style={{marginTop: '12px', fontSize: '12px', color: '#64748b', textAlign: 'center'}}>
+                            Running vs Closed Plots
                         </div>
                     </div>
 
-                    {/* Financial Impact Analysis */}
+                    {/* Top Right: Risk Distribution */}
                     <div className="dashboard-card" style={{marginBottom: 0}}>
-                         <h3>Financial Impact Analysis</h3>
-                         <div className="financial-stats">
-                            <div className="fin-stat-row">
-                                <span className="fin-label">Unused / Encroached Area</span>
-                                <span className="fin-value">
-                                    {Math.round((stats?.financialStats?.totalUnusedLandArea || 0) / 10.764).toLocaleString()} sq m
-                                </span>
-                            </div>
-                            <div className="fin-stat-row">
-                                <span className="fin-label">Daily Opportunity Cost</span>
-                                <span className="fin-value loss">
-                                    ₹{Math.round(stats?.financialStats?.totalDailyLoss || 0).toLocaleString()}
-                                </span>
-                            </div>
-                            <div className="fin-note">
-                                *Estimated revenue loss based on current market value and potential lease yield of stagnant assets.
-                            </div>
-                         </div>
+                        <h3>⚠️ Risk Distribution</h3>
+                        <div className="chart-container" style={{height: '250px'}}>
+                            <Bar data={riskChartData} options={barOptions} />
+                        </div>
+                        <div style={{marginTop: '12px', fontSize: '12px', color: '#64748b', textAlign: 'center'}}>
+                            Low, Medium, and High Risk Plots
+                        </div>
+                    </div>
+
+                    {/* Bottom Left: Encroachment & Violations */}
+                    <div className="dashboard-card" style={{marginBottom: 0}}>
+                        <h3>🚨 Encroachment & Violations</h3>
+                        <div className="chart-container" style={{height: '250px'}}>
+                            <Bar data={violationChartData} options={barOptions} />
+                        </div>
+                        <div style={{marginTop: '12px', fontSize: '12px', color: '#64748b', textAlign: 'center'}}>
+                            Average violation scores and high-risk count
+                        </div>
+                    </div>
+
+                    {/* Bottom Right: Financial Loss Analysis */}
+                    <div className="dashboard-card" style={{marginBottom: 0}}>
+                        <h3>💰 Financial Loss Analysis</h3>
+                        <div className="chart-container" style={{height: '250px'}}>
+                            <Bar data={financialChartData} options={{
+                                ...barOptions,
+                                plugins: {
+                                    ...barOptions.plugins,
+                                    tooltip: {
+                                        callbacks: {
+                                            label: (context) => `₹${context.parsed.y.toLocaleString()}`
+                                        }
+                                    }
+                                }
+                            }} />
+                        </div>
+                        <div style={{marginTop: '12px', fontSize: '12px', color: '#64748b', textAlign: 'center'}}>
+                            Daily, Monthly, and Yearly opportunity cost
+                        </div>
                     </div>
                 </div>
 
-                {/* 3. KPI Cards Row */}
-                <div className="dashboard-card" style={{marginBottom: '24px', display: 'flex', justifyContent: 'space-around', gap: '20px'}}>
-                    <div className="kpi-card total-plots" style={{flex: 1, border: 'none', background: '#f8fafc'}}>
-                        <div className="kpi-icon">🏭</div>
-                        <span className="kpi-value">{totalPlots}</span>
-                        <span className="kpi-label">Total Plots</span>
+                {/* Financial Summary Cards */}
+                <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '24px'}}>
+                    <div className="dashboard-card" style={{marginBottom: 0, textAlign: 'center', padding: '16px'}}>
+                        <div style={{fontSize: '0.85rem', color: '#64748b', marginBottom: '8px'}}>Unused Land Area</div>
+                        <div style={{fontSize: '1.5rem', fontWeight: '700', color: '#f59e0b'}}>
+                            {Math.round((stats?.financialStats?.totalUnusedLandArea || 0) / 10.764).toLocaleString()} m²
+                        </div>
                     </div>
-                    <div className="kpi-card running-plots" style={{flex: 1, border: 'none', background: '#f8fafc'}}>
-                        <div className="kpi-icon">⚡</div>
-                        <span className="kpi-value">{runningPlots}</span>
-                        <span className="kpi-label">Running</span>
+                    <div className="dashboard-card" style={{marginBottom: 0, textAlign: 'center', padding: '16px'}}>
+                        <div style={{fontSize: '0.85rem', color: '#64748b', marginBottom: '8px'}}>Daily Revenue Loss</div>
+                        <div style={{fontSize: '1.5rem', fontWeight: '700', color: '#ef4444'}}>
+                            ₹{Math.round(stats?.financialStats?.totalDailyLoss || 0).toLocaleString()}
+                        </div>
                     </div>
-                    <div className="kpi-card closed-plots" style={{flex: 1, border: 'none', background: '#f8fafc'}}>
-                        <div className="kpi-icon">🚫</div>
-                        <span className="kpi-value">{closedPlots}</span>
-                        <span className="kpi-label">Closed</span>
+                    <div className="dashboard-card" style={{marginBottom: 0, textAlign: 'center', padding: '16px'}}>
+                        <div style={{fontSize: '0.85rem', color: '#64748b', marginBottom: '8px'}}>Yearly Projection</div>
+                        <div style={{fontSize: '1.5rem', fontWeight: '700', color: '#dc2626'}}>
+                            ₹{Math.round((stats?.financialStats?.totalDailyLoss || 0) * 365).toLocaleString()}
+                        </div>
                     </div>
                 </div>
+
+
 
                 {/* 5. Map Placeholder */}
                 <div className="dashboard-card" style={{ padding: 0, overflow: 'hidden' }}>
