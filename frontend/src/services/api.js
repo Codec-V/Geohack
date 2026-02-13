@@ -26,6 +26,10 @@ export const plotAPI = {
     // Analyze custom area
     analyzeCustom: (geometry) => api.post('/plots/analyze-custom', { geometry }),
 
+    // Analyze comparison between drawn polygon and reference plot
+    analyzeComparison: (referencePlotId, drawnGeometry) => 
+        api.post('/plots/analyze-comparison', { referencePlotId, drawnGeometry }),
+
     // Get report
     getReport: (id) => api.get(`/plots/${id}/report`),
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, GeoJSON, Popup, useMapEvents, Polyline, Polygon, CircleMarker } from 'react-leaflet';
+import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './MapView.css';
 import { plotAPI } from '../services/api';
@@ -14,13 +15,87 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
     const [isDrawMode, setIsDrawMode] = useState(false);
     const [drawPoints, setDrawPoints] = useState([]);
     const [isAnalyzingCustom, setIsAnalyzingCustom] = useState(false);
+    const [showCoordinates, setShowCoordinates] = useState(true); // Auto-show by default
 
-    // Draw mode effect to close popups
-    useEffect(() => {
-        if (isDrawMode && mapRef.current) {
-            mapRef.current.closePopup();
+    // Analysis modal state
+    const [showAnalysisModal, setShowAnalysisModal] = useState(false);
+    const [selectedReferencePlotId, setSelectedReferencePlotId] = useState('');
+    const [analysisResults, setAnalysisResults] = useState(null);
+    const [isAnalyzingComparison, setIsAnalyzingComparison] = useState(false);
+
+    // Draggable state for instructions panel
+    const [position, setPosition] = useState(null);
+    const dragRef = useRef(null);
+    const isDragging = useRef(false);
+    const dragOffset = useRef({ x: 0, y: 0 });
+
+    const handleMouseDown = (e) => {
+        // Prevent drag if clicking on a button
+        if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+        
+        e.stopPropagation();
+        e.preventDefault();
+        
+        const element = dragRef.current;
+        if (!element) return;
+
+        const rect = element.getBoundingClientRect();
+        const parent = element.offsetParent || document.body;
+        const parentRect = parent.getBoundingClientRect();
+
+        // Calculate click offset within the element
+        dragOffset.current = {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+        };
+
+        isDragging.current = true;
+
+        // If this is the first drag, initialize position from current computed style
+        if (!position) {
+            setPosition({
+                x: rect.left - parentRect.left,
+                y: rect.top - parentRect.top
+            });
         }
-    }, [isDrawMode]);
+    };
+
+    useEffect(() => {
+        const handleMouseMove = (e) => {
+            if (!isDragging.current || !dragRef.current) return;
+            
+            const element = dragRef.current;
+            const parent = element.offsetParent || document.body;
+            const parentRect = parent.getBoundingClientRect();
+            
+            // Calculate new position relative to parent
+            let newX = e.clientX - parentRect.left - dragOffset.current.x;
+            let newY = e.clientY - parentRect.top - dragOffset.current.y;
+            
+            // Boundary checks
+            const maxX = parentRect.width - element.offsetWidth;
+            const maxY = parentRect.height - element.offsetHeight;
+            
+            newX = Math.max(0, Math.min(newX, maxX));
+            newY = Math.max(0, Math.min(newY, maxY));
+
+            setPosition({ x: newX, y: newY });
+        };
+
+        const handleMouseUp = () => {
+            isDragging.current = false;
+        };
+
+        if (isDrawMode) {
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mouseup', handleMouseUp);
+        }
+
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [isDrawMode, position]); // Re-bind if mode changes
 
     // Search state
     const [searchQuery, setSearchQuery] = useState('');
@@ -28,6 +103,31 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
     const [isSearching, setIsSearching] = useState(false);
     const [searchError, setSearchError] = useState(null);
     const debounceTimeoutRef = useRef(null);
+
+    // Auto-focus on selected plot
+    useEffect(() => {
+        if (selectedPlot && mapRef.current) {
+            try {
+                // Create a temporary Leaflet GeoJSON layer to calculate bounds
+                const geoJsonLayer = L.geoJSON(selectedPlot.boundary);
+                const bounds = geoJsonLayer.getBounds();
+
+                if (bounds.isValid()) {
+                    mapRef.current.fitBounds(bounds, {
+                        padding: [50, 50],
+                        maxZoom: 18,
+                        animate: true,
+                        duration: 1.5
+                    });
+
+                    // Force switch to satellite view for better context during analysis
+                    setMapType('satellite');
+                }
+            } catch (error) {
+                console.error("Error focusing on plot:", error);
+            }
+        }
+    }, [selectedPlot]);
 
     // Fetch suggestions as user types
     const handleInputChange = (e) => {
@@ -57,10 +157,10 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
     const handleSelectSuggestion = (place) => {
         setSearchQuery(place.display_name);
         setSuggestions([]);
-        
+
         const lat = parseFloat(place.lat);
         const lon = parseFloat(place.lon);
-        
+
         if (mapRef.current) {
             mapRef.current.flyTo([lat, lon], 14, {
                 duration: 1.5
@@ -70,20 +170,20 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
 
     const handleSearch = async () => {
         if (!searchQuery.trim()) return;
-        
+
         // If we have suggestions, pick the first one
         if (suggestions.length > 0) {
             handleSelectSuggestion(suggestions[0]);
             return;
         }
-        
+
         setIsSearching(true);
         setSearchError(null);
-        
+
         try {
             const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1`);
             const data = await response.json();
-            
+
             if (data && data.length > 0) {
                 const { lat, lon } = data[0];
                 if (mapRef.current) {
@@ -109,7 +209,14 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
             click(e) {
                 if (isDrawMode && !isAnalyzingCustom) {
                     const { lat, lng } = e.latlng;
-                    setDrawPoints(prev => [...prev, [lat, lng]]);
+                    setDrawPoints(prev => {
+                        const newPoints = [...prev, [lat, lng]];
+                        // Auto-show coordinates when first point is added
+                        if (newPoints.length === 1) {
+                            setShowCoordinates(true);
+                        }
+                        return newPoints;
+                    });
                 }
             }
         });
@@ -160,6 +267,134 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
     const handleCancelDraw = () => {
         setIsDrawMode(false);
         setDrawPoints([]);
+        setShowCoordinates(false);
+    };
+
+    // Handle opening analysis modal
+    const handleOpenAnalysisModal = () => {
+        if (drawPoints.length < 3) {
+            alert("Please draw a polygon with at least 3 points");
+            return;
+        }
+        setShowAnalysisModal(true);
+    };
+
+    // Handle comparison analysis
+    const handleConfirmAnalysis = async () => {
+        if (!selectedReferencePlotId) {
+            alert("Please select a reference plot");
+            return;
+        }
+
+        try {
+            setIsAnalyzingComparison(true);
+
+            // Close the polygon
+            const coordinates = [...drawPoints, drawPoints[0]];
+            const geoJsonCoordinates = [coordinates.map(point => [point[1], point[0]])];
+
+            const drawnGeometry = {
+                type: 'Polygon',
+                coordinates: geoJsonCoordinates
+            };
+
+            const response = await plotAPI.analyzeComparison(selectedReferencePlotId, drawnGeometry);
+
+            if (response.data.success) {
+                setAnalysisResults(response.data.data);
+                setShowAnalysisModal(false);
+                // Keep draw mode active to show results
+            }
+        } catch (error) {
+            console.error("Comparison analysis error:", error);
+            alert("Failed to analyze comparison. Please try again.");
+        } finally {
+            setIsAnalyzingComparison(false);
+        }
+    };
+
+    // Clear analysis results
+    const handleClearAnalysis = () => {
+        setAnalysisResults(null);
+        setIsDrawMode(false);
+        setDrawPoints([]);
+        setShowCoordinates(false);
+        setSelectedReferencePlotId('');
+    };
+
+    // Create GeoJSON from drawn points
+    const createGeoJSON = () => {
+        if (drawPoints.length < 3) return null;
+
+        // Close the polygon
+        const coordinates = [...drawPoints, drawPoints[0]];
+        // Convert to GeoJSON format [lng, lat]
+        const geoJsonCoordinates = [coordinates.map(point => [point[1], point[0]])];
+
+        return {
+            type: "FeatureCollection",
+            features: [{
+                type: "Feature",
+                properties: {
+                    name: "Custom Plot",
+                    source: "GeoCompliance Drawing Tool"
+                },
+                geometry: {
+                    type: "Polygon",
+                    coordinates: geoJsonCoordinates
+                }
+            }]
+        };
+    };
+
+    // Open in geojson.io
+    const handleOpenInGeoJSONIO = () => {
+        const geojson = createGeoJSON();
+        if (!geojson) {
+            alert("Please draw at least 3 points to create a polygon");
+            return;
+        }
+
+        const url = "https://geojson.io/#data=data:application/json," +
+            encodeURIComponent(JSON.stringify(geojson));
+        window.open(url, "_blank");
+    };
+
+    // Copy coordinates to clipboard
+    const handleCopyCoordinates = async () => {
+        if (drawPoints.length === 0) {
+            alert("No coordinates to copy");
+            return;
+        }
+
+        const coordText = drawPoints.map((point, i) =>
+            `Point ${i + 1}: [${point[0].toFixed(6)}, ${point[1].toFixed(6)}]`
+        ).join('\n');
+
+        try {
+            await navigator.clipboard.writeText(coordText);
+            alert("Coordinates copied to clipboard!");
+        } catch (err) {
+            console.error("Failed to copy:", err);
+            alert("Failed to copy coordinates");
+        }
+    };
+
+    // Copy GeoJSON to clipboard
+    const handleCopyGeoJSON = async () => {
+        const geojson = createGeoJSON();
+        if (!geojson) {
+            alert("Please draw at least 3 points to create a polygon");
+            return;
+        }
+
+        try {
+            await navigator.clipboard.writeText(JSON.stringify(geojson, null, 2));
+            alert("GeoJSON copied to clipboard!");
+        } catch (err) {
+            console.error("Failed to copy:", err);
+            alert("Failed to copy GeoJSON");
+        }
     };
 
     // Get color based on usage type
@@ -197,8 +432,7 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
                 fillOpacity: 0.6,
                 color: getUsageColor(feature.properties.usageType),
                 weight: 2,
-                opacity: 0.8,
-                interactive: !isDrawMode // Disable interaction in draw mode
+                opacity: 0.8
             };
         }
 
@@ -210,8 +444,7 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
             fillOpacity: selectedPlot?._id === feature.properties.id ? 0.7 : 0.5,
             color: getRiskColor(riskScore),
             weight: selectedPlot?._id === feature.properties.id ? 3 : 2,
-            opacity: 1,
-            interactive: !isDrawMode // Disable interaction in draw mode
+            opacity: 1
         };
     };
 
@@ -340,27 +573,219 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
                         ✕ Cancel
                     </button>
                     {drawPoints.length >= 3 && (
-                        <button
-                            className="toggle-btn active"
-                            style={{ padding: '2px 8px', fontSize: '0.75rem', background: '#3b82f6', color: 'white' }}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleAnalyzeCustom();
-                            }}
-                            disabled={isAnalyzingCustom}
-                        >
-                            {isAnalyzingCustom ? '⏳ Analyzing...' : '🔍 Analyze Area'}
-                        </button>
+                        <>
+                            <button
+                                className="toggle-btn active"
+                                style={{ padding: '2px 8px', fontSize: '0.75rem', background: '#3b82f6', color: 'white' }}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOpenAnalysisModal();
+                                }}
+                            >
+                                🔍 Analyze
+                            </button>
+                            <button
+                                className="toggle-btn"
+                                style={{ padding: '2px 8px', fontSize: '0.75rem', background: '#10b981', color: 'white' }}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOpenInGeoJSONIO();
+                                }}
+                            >
+                                🌐 Open in geojson.io
+                            </button>
+                        </>
                     )}
+                </div>
+            )}
+
+            {/* Coordinates Panel */}
+            {isDrawMode && showCoordinates && (
+                <div className="coordinates-panel">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <h4 style={{ margin: 0, fontSize: '0.9rem' }}>
+                            📍 Coordinates {drawPoints.length > 0 && `(${drawPoints.length} points)`}
+                        </h4>
+                        {drawPoints.length > 0 && (
+                            <div>
+                                <button
+                                    onClick={handleCopyCoordinates}
+                                    style={{
+                                        padding: '4px 8px',
+                                        fontSize: '0.7rem',
+                                        background: '#3b82f6',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '4px',
+                                        cursor: 'pointer',
+                                        marginRight: '4px'
+                                    }}
+                                >
+                                    📋 Copy Coords
+                                </button>
+                                <button
+                                    onClick={handleCopyGeoJSON}
+                                    style={{
+                                        padding: '4px 8px',
+                                        fontSize: '0.7rem',
+                                        background: '#10b981',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '4px',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    📋 Copy GeoJSON
+                                </button>
+                                <button
+                                    onClick={() => setShowCoordinates(false)}
+                                    style={{
+                                        padding: '4px 8px',
+                                        fontSize: '0.7rem',
+                                        background: '#6b7280',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '4px',
+                                        cursor: 'pointer',
+                                        marginLeft: '4px'
+                                    }}
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                    <div style={{
+                        maxHeight: '200px',
+                        overflowY: 'auto',
+                        fontSize: '0.75rem',
+                        fontFamily: 'monospace',
+                        background: '#f8fafc',
+                        padding: '8px',
+                        borderRadius: '4px',
+                        minHeight: '60px'
+                    }}>
+                        {drawPoints.length === 0 ? (
+                            <div style={{
+                                color: '#6b7280',
+                                fontStyle: 'italic',
+                                textAlign: 'center',
+                                padding: '12px 0'
+                            }}>
+                                Click on the map to add points.<br />
+                                Coordinates will appear here.
+                            </div>
+                        ) : (
+                            drawPoints.map((point, i) => (
+                                <div key={i} style={{ marginBottom: '4px' }}>
+                                    <strong>Point {i + 1}:</strong> [{point[0].toFixed(6)}, {point[1].toFixed(6)}]
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Analysis Modal */}
+            {showAnalysisModal && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'rgba(0, 0, 0, 0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 2000
+                }}
+                onClick={() => setShowAnalysisModal(false)}
+                >
+                    <div style={{
+                        background: 'white',
+                        padding: '24px',
+                        borderRadius: '12px',
+                        minWidth: '400px',
+                        maxWidth: '500px',
+                        boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    >
+                        <h3 style={{ margin: '0 0 16px 0', fontSize: '1.25rem', color: '#111827' }}>
+                            Select Reference Plot
+                        </h3>
+                        <p style={{ margin: '0 0 16px 0', fontSize: '0.875rem', color: '#6b7280' }}>
+                            Choose a government-allotted plot to compare with your drawn polygon
+                        </p>
+                        
+                        <select
+                            value={selectedReferencePlotId}
+                            onChange={(e) => setSelectedReferencePlotId(e.target.value)}
+                            style={{
+                                width: '100%',
+                                padding: '10px',
+                                fontSize: '0.875rem',
+                                border: '1px solid #d1d5db',
+                                borderRadius: '6px',
+                                marginBottom: '20px',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            <option value="">-- Select a plot --</option>
+                            {plots.map(plot => (
+                                <option key={plot._id} value={plot._id}>
+                                    {plot.plotId} - {plot.name}
+                                </option>
+                            ))}
+                        </select>
+
+                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                            <button
+                                onClick={() => {
+                                    setShowAnalysisModal(false);
+                                    setSelectedReferencePlotId('');
+                                }}
+                                style={{
+                                    padding: '8px 16px',
+                                    fontSize: '0.875rem',
+                                    background: '#f3f4f6',
+                                    color: '#374151',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    fontWeight: '500'
+                                }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleConfirmAnalysis}
+                                disabled={!selectedReferencePlotId || isAnalyzingComparison}
+                                style={{
+                                    padding: '8px 16px',
+                                    fontSize: '0.875rem',
+                                    background: selectedReferencePlotId && !isAnalyzingComparison ? '#3b82f6' : '#93c5fd',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    cursor: selectedReferencePlotId && !isAnalyzingComparison ? 'pointer' : 'not-allowed',
+                                    fontWeight: '500'
+                                }}
+                            >
+                                {isAnalyzingComparison ? '⏳ Analyzing...' : '✓ Confirm Analyze'}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 
             <div className="map-view-toggle">
                 {/* Search Bar */}
                 <div className="map-search-bar" onClick={e => e.stopPropagation()}>
-                    <input 
-                        type="text" 
-                        placeholder="Search location..." 
+                    <input
+                        type="text"
+                        placeholder="Search location..."
                         value={searchQuery}
                         onChange={handleInputChange}
                         onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -374,13 +799,13 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
                     <button onClick={handleSearch} disabled={isSearching}>
                         {isSearching ? '...' : '🔍'}
                     </button>
-                    
+
                     {/* Suggestions Dropdown */}
                     {suggestions.length > 0 && (
                         <ul className="search-suggestions">
                             {suggestions.map((place) => (
-                                <li 
-                                    key={place.place_id} 
+                                <li
+                                    key={place.place_id}
                                     onClick={() => handleSelectSuggestion(place)}
                                 >
                                     {place.display_name}
@@ -431,7 +856,6 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
             </div>
 
             <MapContainer
-                className={`leaflet-container ${isDrawMode ? 'draw-mode-active' : ''}`}
                 center={center}
                 zoom={zoom}
                 style={{ height: '100%', width: '100%', cursor: isDrawMode ? 'crosshair' : 'grab' }}
@@ -459,7 +883,7 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
                 {/* Render main plot boundaries */}
                 {plots.length > 0 && (
                     <GeoJSON
-                        key={`${JSON.stringify(plotsGeoJSON)}-${isDrawMode}`}
+                        key={JSON.stringify(plotsGeoJSON)}
                         data={plotsGeoJSON}
                         style={plotStyle}
                         onEachFeature={onEachFeature}
@@ -469,10 +893,55 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
                 {/* Render usage zones on top */}
                 {allUsageZones.features.length > 0 && (
                     <GeoJSON
-                        key={`usage-zones-${JSON.stringify(allUsageZones)}-${isDrawMode}`}
+                        key={`usage-zones-${JSON.stringify(allUsageZones)}`}
                         data={allUsageZones}
                         style={plotStyle}
                         onEachFeature={onEachFeature}
+                    />
+                )}
+
+                {/* Render analysis results (comparison) */}
+                {analysisResults && analysisResults.features && analysisResults.features.length > 0 && (
+                    <GeoJSON
+                        key={`analysis-${JSON.stringify(analysisResults)}`}
+                        data={analysisResults}
+                        style={(feature) => ({
+                            fillColor: feature.properties.color,
+                            fillOpacity: 0.6,
+                            color: feature.properties.color,
+                            weight: 2,
+                            opacity: 0.9
+                        })}
+                        onEachFeature={(feature, layer) => {
+                            const categoryLabels = {
+                                overlap: 'Valid Overlap',
+                                encroachment: 'Encroachment',
+                                unused: 'Unused Area'
+                            };
+                            
+                            layer.bindPopup(`
+                                <div style="min-width: 180px;">
+                                    <h3 style="margin: 0 0 8px 0; font-size: 14px;">${categoryLabels[feature.properties.category]}</h3>
+                                    <p style="margin: 4px 0; font-size: 12px;"><strong>Area:</strong> ${feature.properties.areaHectares} hectares</p>
+                                    <p style="margin: 4px 0; font-size: 12px;"><strong>Category:</strong> ${feature.properties.category}</p>
+                                </div>
+                            `);
+                            
+                            layer.on({
+                                mouseover: (e) => {
+                                    e.target.setStyle({
+                                        fillOpacity: 0.8,
+                                        weight: 3
+                                    });
+                                },
+                                mouseout: (e) => {
+                                    e.target.setStyle({
+                                        fillOpacity: 0.6,
+                                        weight: 2
+                                    });
+                                }
+                            });
+                        }}
                     />
                 )}
 

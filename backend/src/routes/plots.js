@@ -181,6 +181,134 @@ router.post('/analyze-custom', async (req, res) => {
 });
 
 /**
+ * POST /api/plots/analyze-comparison
+ * Compare drawn polygon with reference plot to identify overlap, encroachment, and unused areas
+ */
+router.post('/analyze-comparison', async (req, res) => {
+    try {
+        const { referencePlotId, drawnGeometry } = req.body;
+
+        // Validate inputs
+        if (!referencePlotId || !drawnGeometry) {
+            return res.status(400).json({
+                success: false,
+                error: 'Missing required fields: referencePlotId and drawnGeometry'
+            });
+        }
+
+        if (!drawnGeometry.coordinates) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid drawnGeometry format'
+            });
+        }
+
+        // Fetch reference plot from database
+        const referencePlot = await Plot.findById(referencePlotId);
+        if (!referencePlot) {
+            return res.status(404).json({
+                success: false,
+                error: 'Reference plot not found'
+            });
+        }
+
+        // Create Turf polygons
+        const referencePolygon = turf.polygon(referencePlot.boundary.coordinates);
+        const drawnPolygon = turf.polygon(drawnGeometry.coordinates);
+
+        // Calculate spatial relationships
+        const features = [];
+
+        // 1. Overlap (Intersection) - Valid usage (Blue)
+        try {
+            const intersection = turf.intersect(turf.featureCollection([referencePolygon, drawnPolygon]));
+            if (intersection) {
+                const overlapArea = turf.area(intersection);
+                features.push({
+                    type: 'Feature',
+                    properties: {
+                        category: 'overlap',
+                        color: '#3b82f6', // Blue
+                        area: overlapArea,
+                        areaHectares: (overlapArea / 10000).toFixed(4)
+                    },
+                    geometry: intersection.geometry
+                });
+            }
+        } catch (err) {
+            console.warn('No intersection found:', err.message);
+        }
+
+        // 2. Encroachment (Drawn area outside reference) - Red
+        try {
+            const encroachment = turf.difference(turf.featureCollection([drawnPolygon, referencePolygon]));
+            if (encroachment) {
+                const encroachmentArea = turf.area(encroachment);
+                if (encroachmentArea > 0.1) { // Only include if area > 0.1 sq meters
+                    features.push({
+                        type: 'Feature',
+                        properties: {
+                            category: 'encroachment',
+                            color: '#dc2626', // Red
+                            area: encroachmentArea,
+                            areaHectares: (encroachmentArea / 10000).toFixed(4)
+                        },
+                        geometry: encroachment.geometry
+                    });
+                }
+            }
+        } catch (err) {
+            console.warn('No encroachment found:', err.message);
+        }
+
+        // 3. Unused (Reference area not covered by drawn) - Green
+        try {
+            const unused = turf.difference(turf.featureCollection([referencePolygon, drawnPolygon]));
+            if (unused) {
+                const unusedArea = turf.area(unused);
+                if (unusedArea > 0.1) { // Only include if area > 0.1 sq meters
+                    features.push({
+                        type: 'Feature',
+                        properties: {
+                            category: 'unused',
+                            color: '#16a34a', // Green
+                            area: unusedArea,
+                            areaHectares: (unusedArea / 10000).toFixed(4)
+                        },
+                        geometry: unused.geometry
+                    });
+                }
+            }
+        } catch (err) {
+            console.warn('No unused area found:', err.message);
+        }
+
+        // Return GeoJSON FeatureCollection
+        const result = {
+            type: 'FeatureCollection',
+            features: features
+        };
+
+        res.json({
+            success: true,
+            data: result,
+            metadata: {
+                referencePlotId: referencePlot._id,
+                referencePlotName: referencePlot.name,
+                totalFeatures: features.length
+            }
+        });
+    } catch (error) {
+        console.error('Error in analyze-comparison:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to analyze comparison',
+            message: error.message
+        });
+    }
+});
+
+/**
  * POST /api/plots/:id/analyze
  * Trigger analysis for a specific plot
  */

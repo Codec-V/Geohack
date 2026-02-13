@@ -1,4 +1,4 @@
- .map-container {
+.map-container {
     height: 75vh;
     width: 100%;
     position: relative;
@@ -105,7 +105,7 @@
     border-radius: 4px;
     font-size: 12px;
     white-space: nowrap;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     pointer-events: none;
 }
 
@@ -208,44 +208,65 @@
 .map-instructions {
     position: absolute;
     top: 80px;
-    right: 20px;
-    left: auto;
-    transform: none;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    background: white;
+    padding: 8px 16px;
+    border-radius: 50px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    font-size: 0.9rem;
+    color: #1f2937;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    border: 2px solid #3b82f6;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+/* Coordinates Panel */
+.coordinates-panel {
+    position: absolute;
+    top: 140px;
+    left: 50%;
+    transform: translateX(-50%);
     z-index: 1000;
     background: white;
     padding: 12px;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    font-size: 0.9rem;
-    color: #1f2937;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    align-items: flex-end;
-    border-left: 4px solid #3b82f6;
-    border-top: none;
-    border-right: none;
-    border-bottom: none;
-    animation: slideInRight 0.3s ease-out;
-    max-width: 250px;
+    min-width: 300px;
+    max-width: 400px;
+    border: 1px solid #e5e7eb;
+    animation: slideDown 0.3s ease-out;
 }
 
-.map-instructions span {
-    text-align: right;
+.coordinates-panel::-webkit-scrollbar {
+    width: 6px;
 }
 
-@keyframes slideInRight {
-    from {
-        right: -250px;
-        opacity: 0;
-    }
-    to {
-        right: 20px;
-        opacity: 1;
-    }
+.coordinates-panel::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
 }
 
-/* Force disable interaction on map features when in draw mode */
-.draw-mode-active path.leaflet-interactive {
-    pointer-events: none !important;
+.coordinates-panel::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 3px;
+}
+
+.coordinates-panel::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
 }
