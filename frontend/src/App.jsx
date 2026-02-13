@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import Dashboard from './components/Dashboard';
+import GovernmentDashboard from './components/GovernmentDashboard';
+import PublicDashboard from './components/PublicDashboard';
 import MapView from './components/MapView';
 import PlotUpload from './components/PlotUpload';
 import PlotDetails from './components/PlotDetails';
 import { plotAPI } from './services/api';
+import { translations } from './utils/translations';
 import './App.css';
 
 function App() {
@@ -12,6 +14,10 @@ function App() {
   const [showUpload, setShowUpload] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [userRole, setUserRole] = useState('govt'); // 'govt' or 'public'
+  const [lang, setLang] = useState('en'); // 'en' or 'hi'
+
+  const t = (key) => translations[lang][key] || key;
 
   useEffect(() => {
     fetchPlots();
@@ -49,7 +55,7 @@ function App() {
 
   const handleDeletePlot = async (e, plotId) => {
     e.stopPropagation();
-    if (window.confirm('Are you sure you want to delete this plot? This action cannot be undone.')) {
+    if (window.confirm(t('delete_confirm'))) {
       try {
         await plotAPI.delete(plotId);
         await fetchPlots();
@@ -70,18 +76,76 @@ function App() {
         <div className="container">
           <div className="header-content">
             <div className="logo">
-              <span className="logo-icon">🛰️</span>
+              <span className="logo-icon">
+                {userRole === 'govt' ? '🛰️' : '🏙️'}
+              </span>
               <div>
-                <h1>GeoCompliance</h1>
-                <p className="tagline">Satellite-Powered Land Monitoring</p>
+                <h1>{t(userRole === 'govt' ? 'appTitle' : 'appTitle')}</h1>
+                <p className="tagline">
+                    {t(userRole === 'govt' ? 'govt_tagline' : 'public_tagline')}
+                </p>
               </div>
             </div>
-            <button
-              className="btn btn-success"
-              onClick={() => setShowUpload(!showUpload)}
-            >
-              {showUpload ? '✕ Close' : '➕ Upload Plot'}
-            </button>
+            
+            <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+                {/* Language Toggle */}
+                <button
+                    onClick={() => setLang(lang === 'en' ? 'hi' : 'en')}
+                    style={{
+                        padding: '6px 12px',
+                        border: '1px solid #cbd5e1',
+                        background: 'white',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '0.9rem'
+                    }}
+                >
+                    {t('toggle_lang')}
+                </button>
+
+                {/* Role Switcher */}
+                <div className="role-switcher" style={{background: '#f1f5f9', padding: '4px', borderRadius: '8px', display: 'flex'}}>
+                    <button 
+                        onClick={() => setUserRole('govt')}
+                        style={{
+                            padding: '6px 12px',
+                            border: 'none',
+                            background: userRole === 'govt' ? '#334155' : 'transparent',
+                            color: userRole === 'govt' ? 'white' : '#64748b',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontWeight: '500',
+                            fontSize: '0.9rem'
+                        }}
+                    >
+                        {t('switchRole_govt')}
+                    </button>
+                    <button 
+                         onClick={() => setUserRole('public')}
+                         style={{
+                            padding: '6px 12px',
+                            border: 'none',
+                            background: userRole === 'public' ? '#3b82f6' : 'transparent',
+                            color: userRole === 'public' ? 'white' : '#64748b',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontWeight: '500',
+                            fontSize: '0.9rem'
+                        }}
+                    >
+                        {t('switchRole_public')}
+                    </button>
+                </div>
+
+                {userRole === 'govt' && (
+                    <button
+                    className="btn btn-success"
+                    onClick={() => setShowUpload(!showUpload)}
+                    >
+                    {showUpload ? t('close_btn') : t('upload_btn')}
+                    </button>
+                )}
+            </div>
           </div>
         </div>
       </header>
@@ -89,135 +153,147 @@ function App() {
       {/* Main Content */}
       <main className="app-main">
         <div className="container">
-          {/* Upload Section */}
-          {showUpload && (
-            <div style={{ marginBottom: '2rem' }}>
-              <PlotUpload onUploadSuccess={handleUploadSuccess} />
-            </div>
-          )}
-
-          {/* Tabs */}
-          <div className="tabs">
-            <button
-              className={`tab ${activeTab === 'dashboard' ? 'active' : ''}`}
-              onClick={() => setActiveTab('dashboard')}
-            >
-              📊 Dashboard
-            </button>
-            <button
-              className={`tab ${activeTab === 'map' ? 'active' : ''}`}
-              onClick={() => setActiveTab('map')}
-            >
-              🗺️ Map View
-            </button>
-          </div>
-
-          {/* Tab Content */}
-          {loading ? (
-            <div className="loading-container">
-              <div className="spinner"></div>
-              <p>Loading GeoCompliance...</p>
-            </div>
+          
+          {/* Public View: Dedicated Dashboard */}
+          {userRole === 'public' ? (
+              <PublicDashboard lang={lang} t={t} />
           ) : (
+            /* Government View: Full Functionality */
             <>
-              {activeTab === 'dashboard' && (
-                <Dashboard onRefresh={fetchPlots} />
-              )}
-
-              {activeTab === 'map' && (
-                <div className="map-section">
-                  <MapView
-                    plots={plots}
-                    onPlotClick={handlePlotClick}
-                    selectedPlot={selectedPlot}
-                  />
-
-                  {plots.length === 0 && (
-                    <div className="empty-state">
-                      <p>📍 No plots uploaded yet</p>
-                      <p className="empty-hint">Upload a plot boundary to get started</p>
+                {/* Upload Section */}
+                {showUpload && (
+                    <div style={{ marginBottom: '2rem' }}>
+                    <PlotUpload onUploadSuccess={handleUploadSuccess} />
                     </div>
-                  )}
+                )}
+
+                {/* Tabs */}
+                <div className="tabs">
+                    <button
+                    className={`tab ${activeTab === 'dashboard' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('dashboard')}
+                    >
+                    {t('tabs_dashboard')}
+                    </button>
+                    <button
+                    className={`tab ${activeTab === 'map' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('map')}
+                    >
+                    {t('tabs_map')}
+                    </button>
                 </div>
-              )}
+
+                {/* Tab Content */}
+                {loading ? (
+                    <div className="loading-container">
+                    <div className="spinner"></div>
+                    <p>{t('loading')}</p>
+                    </div>
+                ) : (
+                    <>
+                    {activeTab === 'dashboard' && (
+                        <GovernmentDashboard onRefresh={fetchPlots} lang={lang} t={t} />
+                    )}
+
+                    {activeTab === 'map' && (
+                        <div className="map-section">
+                        <MapView
+                            plots={plots}
+                            onPlotClick={handlePlotClick}
+                            selectedPlot={selectedPlot}
+                        />
+
+                        {plots.length === 0 && (
+                            <div className="empty-state">
+                            <p>{t('no_plots')}</p>
+                            <p className="empty-hint">{t('upload_hint')}</p>
+                            </div>
+                        )}
+                        </div>
+                    )}
+                    </>
+                )}
+
+                {/* Plots List - Only on Map View for easy access */}
+                {!loading && activeTab === 'map' && plots.length > 0 && (
+                    <div className="plots-list-section">
+                    <h2>{t('all_plots')} ({plots.length})</h2>
+                    <div className="plots-grid">
+                        {plots.map(plot => {
+                        const riskScore = plot.latestAnalysis?.finalRiskScore;
+                        const getRiskClass = (score) => {
+                            if (!score) return '';
+                            if (score >= 70) return 'risk-high';
+                            if (score >= 40) return 'risk-medium';
+                            return 'risk-low';
+                        };
+
+                        return (
+                            <div
+                            key={plot._id}
+                            className={`plot-card ${getRiskClass(riskScore)}`}
+                            onClick={() => handlePlotClick(plot)}
+                            >
+                            <div className="plot-card-header">
+                                <h3>{plot.name}</h3>
+                                <div className="plot-card-actions">
+                                {riskScore !== undefined && (
+                                    <span className={`risk-badge ${getRiskClass(riskScore)}`}>
+                                    {riskScore >= 70 ? t('high') : riskScore >= 40 ? t('medium') : t('low')}
+                                    </span>
+                                )}
+                                <button
+                                    className="btn-delete-icon"
+                                    onClick={(e) => handleDeletePlot(e, plot._id)}
+                                    title={t('delete_title')}
+                                >
+                                    🗑️
+                                </button>
+                                </div>
+                            </div>
+                            <p className="plot-card-id">ID: {plot.plotId}</p>
+                            <div className="plot-card-stats">
+                                <div className="stat">
+                                <span className="stat-label">{t('area')}</span>
+                                <span className="stat-value">
+                                    {(plot.approvedArea / 10000).toFixed(2)} ha
+                                </span>
+                                </div>
+                                {riskScore !== undefined && (
+                                <div className="stat">
+                                    <span className="stat-label">{t('risk')}</span>
+                                    <span className="stat-value">{riskScore}/100</span>
+                                </div>
+                                )}
+                            </div>
+                            </div>
+                        );
+                        })}
+                    </div>
+                    </div>
+                )}
             </>
           )}
 
-          {/* Plots List */}
-          {!loading && plots.length > 0 && (
-            <div className="plots-list-section">
-              <h2>All Plots ({plots.length})</h2>
-              <div className="plots-grid">
-                {plots.map(plot => {
-                  const riskScore = plot.latestAnalysis?.finalRiskScore;
-                  const getRiskClass = (score) => {
-                    if (!score) return '';
-                    if (score >= 70) return 'risk-high';
-                    if (score >= 40) return 'risk-medium';
-                    return 'risk-low';
-                  };
-
-                  return (
-                    <div
-                      key={plot._id}
-                      className={`plot-card ${getRiskClass(riskScore)}`}
-                      onClick={() => handlePlotClick(plot)}
-                    >
-                      <div className="plot-card-header">
-                        <h3>{plot.name}</h3>
-                        <div className="plot-card-actions">
-                          {riskScore !== undefined && (
-                            <span className={`risk-badge ${getRiskClass(riskScore)}`}>
-                              {riskScore >= 70 ? 'High' : riskScore >= 40 ? 'Medium' : 'Low'}
-                            </span>
-                          )}
-                          <button
-                            className="btn-delete-icon"
-                            onClick={(e) => handleDeletePlot(e, plot._id)}
-                            title="Delete Plot"
-                          >
-                            🗑️
-                          </button>
-                        </div>
-                      </div>
-                      <p className="plot-card-id">ID: {plot.plotId}</p>
-                      <div className="plot-card-stats">
-                        <div className="stat">
-                          <span className="stat-label">Area</span>
-                          <span className="stat-value">
-                            {(plot.approvedArea / 10000).toFixed(2)} ha
-                          </span>
-                        </div>
-                        {riskScore !== undefined && (
-                          <div className="stat">
-                            <span className="stat-label">Risk Score</span>
-                            <span className="stat-value">{riskScore}/100</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </div>
       </main>
 
-      {/* Plot Details Modal */}
-      {selectedPlot && (
+      {/* Plot Details Modal - Only for Govt */}
+      {selectedPlot && userRole === 'govt' && (
         <PlotDetails
           plot={selectedPlot}
           onClose={() => setSelectedPlot(null)}
           onAnalysisComplete={handleAnalysisComplete}
+          lang={lang}
+          t={t}
         />
       )}
 
       {/* Footer */}
       <footer className="app-footer">
         <div className="container">
-          <p>© 2026 GeoCompliance - Automated Industrial Land Monitoring System</p>
-          <p className="footer-hint">Powered by Sentinel-2 Satellite Imagery</p>
+          <p>{t('footer_text')}</p>
+          <p className="footer-hint">{t('footer_hint')}</p>
         </div>
       </footer>
     </div>

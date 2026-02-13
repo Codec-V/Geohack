@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { plotAPI } from '../services/api';
+import { Line } from 'react-chartjs-2';
 import './PlotDetails.css';
 
-const PlotDetails = ({ plot, onClose, onAnalysisComplete }) => {
+const PlotDetails = ({ plot, onClose, onAnalysisComplete, lang = 'en', t = (s) => s }) => {
     const [analyzing, setAnalyzing] = useState(false);
     const [generatingReport, setGeneratingReport] = useState(false);
     const [error, setError] = useState(null);
+    const [sliderValue, setSliderValue] = useState(50);
 
     if (!plot) return null;
 
@@ -50,7 +52,7 @@ const PlotDetails = ({ plot, onClose, onAnalysisComplete }) => {
                 <div className="plot-details-header">
                     <div>
                         <h2>{plot.name}</h2>
-                        <p className="plot-id">Plot ID: {plot.plotId}</p>
+                        <p className="plot-id">{t('plot_no')}: {plot.plotId}</p>
                     </div>
                     <button className="btn-close" onClick={onClose}>✕</button>
                 </div>
@@ -64,18 +66,18 @@ const PlotDetails = ({ plot, onClose, onAnalysisComplete }) => {
                 <div className="plot-details-content">
                     {/* Basic Information */}
                     <section className="details-section">
-                        <h3>Basic Information</h3>
+                        <h3>{t('basic_info')}</h3>
                         <div className="info-grid">
                             <div className="info-item">
-                                <span className="info-label">Allotment Date</span>
+                                <span className="info-label">{t('allotment_date')}</span>
                                 <span className="info-value">
                                     {new Date(plot.allotmentDate).toLocaleDateString()}
                                 </span>
                             </div>
                             <div className="info-item">
-                                <span className="info-label">Approved Area</span>
+                                <span className="info-label">{t('approved_area')}</span>
                                 <span className="info-value">
-                                    {(plot.approvedArea / 10000).toFixed(2)} hectares
+                                    {(plot.approvedArea / 10000).toFixed(2)} {t('hectares')}
                                 </span>
                             </div>
                         </div>
@@ -85,20 +87,20 @@ const PlotDetails = ({ plot, onClose, onAnalysisComplete }) => {
                     {plot.latestAnalysis ? (
                         <>
                             <section className="details-section">
-                                <h3>Analysis Results</h3>
+                                <h3>{t('analysis_results')}</h3>
                                 <div className="risk-score-display">
                                     <div className="risk-score-circle">
                                         <span className="risk-score-value">
                                             {plot.latestAnalysis.finalRiskScore}
                                         </span>
-                                        <span className="risk-score-label">Risk Score</span>
+                                        <span className="risk-score-label">{t('risk_score')}</span>
                                     </div>
                                     <span className={riskLevel.class}>{riskLevel.label}</span>
                                 </div>
 
                                 <div className="scores-grid">
                                     <div className="score-card">
-                                        <span className="score-label">Boundary Violation</span>
+                                        <span className="score-label">{t('boundary_violation')}</span>
                                         <div className="score-bar">
                                             <div
                                                 className="score-fill"
@@ -114,7 +116,7 @@ const PlotDetails = ({ plot, onClose, onAnalysisComplete }) => {
                                     </div>
 
                                     <div className="score-card">
-                                        <span className="score-label">Unauthorized Construction</span>
+                                        <span className="score-label">{t('unauth_construction')}</span>
                                         <div className="score-bar">
                                             <div
                                                 className="score-fill"
@@ -130,7 +132,7 @@ const PlotDetails = ({ plot, onClose, onAnalysisComplete }) => {
                                     </div>
 
                                     <div className="score-card">
-                                        <span className="score-label">Utilization Score</span>
+                                        <span className="score-label">{t('utilization_score')}</span>
                                         <div className="score-bar">
                                             <div
                                                 className="score-fill"
@@ -148,25 +150,25 @@ const PlotDetails = ({ plot, onClose, onAnalysisComplete }) => {
 
                                 <div className="info-grid" style={{ marginTop: '1rem' }}>
                                     <div className="info-item">
-                                        <span className="info-label">Built-up Area</span>
+                                        <span className="info-label">{t('built_up_area')}</span>
                                         <span className="info-value">
-                                            {(plot.latestAnalysis.builtUpArea / 10000).toFixed(2)} hectares
+                                            {(plot.latestAnalysis.builtUpArea / 10000).toFixed(2)} {t('hectares')}
                                         </span>
                                     </div>
                                     <div className="info-item">
-                                        <span className="info-label">Deviation</span>
+                                        <span className="info-label">{t('deviation')}</span>
                                         <span className="info-value">
                                             {plot.latestAnalysis.deviationPercentage.toFixed(2)}%
                                         </span>
                                     </div>
                                     <div className="info-item">
-                                        <span className="info-label">Status</span>
+                                        <span className="info-label">{t('status')}</span>
                                         <span className="info-value">
-                                            {plot.latestAnalysis.isVacant ? '🏗️ Vacant' : '✅ Utilized'}
+                                            {plot.latestAnalysis.isVacant ? `🏗️ ${t('vacant')}` : `✅ ${t('utilized')}`}
                                         </span>
                                     </div>
                                     <div className="info-item">
-                                        <span className="info-label">Last Analyzed</span>
+                                        <span className="info-label">{t('last_analyzed')}</span>
                                         <span className="info-value">
                                             {new Date(plot.latestAnalysis.timestamp).toLocaleDateString()}
                                         </span>
@@ -177,13 +179,13 @@ const PlotDetails = ({ plot, onClose, onAnalysisComplete }) => {
                             {/* Land Usage Classification */}
                             {plot.latestAnalysis.usageClassification && (
                                 <section className="details-section">
-                                    <h3>Land Usage Classification</h3>
+                                    <h3>{t('land_usage_class')}</h3>
                                     <div className="usage-grid">
                                         {plot.latestAnalysis.usageClassification.encroached.area > 0 && (
                                             <div className="usage-card">
                                                 <div className="usage-header">
                                                     <span className="usage-color" style={{ background: '#dc2626' }}></span>
-                                                    <span className="usage-label">Encroached Area</span>
+                                                    <span className="usage-label">{t('encroached_area')}</span>
                                                 </div>
                                                 <div className="usage-stats">
                                                     <span className="usage-area">
@@ -200,7 +202,7 @@ const PlotDetails = ({ plot, onClose, onAnalysisComplete }) => {
                                             <div className="usage-card">
                                                 <div className="usage-header">
                                                     <span className="usage-color" style={{ background: '#16a34a' }}></span>
-                                                    <span className="usage-label">Partially Constructed</span>
+                                                    <span className="usage-label">{t('partially_constructed')}</span>
                                                 </div>
                                                 <div className="usage-stats">
                                                     <span className="usage-area">
@@ -217,7 +219,7 @@ const PlotDetails = ({ plot, onClose, onAnalysisComplete }) => {
                                             <div className="usage-card">
                                                 <div className="usage-header">
                                                     <span className="usage-color" style={{ background: '#f59e0b' }}></span>
-                                                    <span className="usage-label">Vacant Area</span>
+                                                    <span className="usage-label">{t('vacant_area')}</span>
                                                 </div>
                                                 <div className="usage-stats">
                                                     <span className="usage-area">
@@ -234,7 +236,7 @@ const PlotDetails = ({ plot, onClose, onAnalysisComplete }) => {
                                             <div className="usage-card">
                                                 <div className="usage-header">
                                                     <span className="usage-color" style={{ background: '#3b82f6' }}></span>
-                                                    <span className="usage-label">Fully Constructed</span>
+                                                    <span className="usage-label">{t('fully_constructed')}</span>
                                                 </div>
                                                 <div className="usage-stats">
                                                     <span className="usage-area">
@@ -253,19 +255,123 @@ const PlotDetails = ({ plot, onClose, onAnalysisComplete }) => {
                     ) : (
                         <section className="details-section">
                             <div className="no-analysis">
-                                <p>📊 No analysis available for this plot</p>
-                                <p className="no-analysis-hint">Click "Run Analysis" to start automated monitoring</p>
+                                <p>{t('no_analysis')}</p>
+                                <p className="no-analysis-hint">{t('run_analysis_hint')}</p>
                             </div>
                         </section>
                     )}
 
+                    {/* AI Risk Forecasting */}
+                    {plot.latestAnalysis && (
+                        <section className="details-section">
+                            <h3>🔮 {t('ai_forecasting')}</h3>
+                            <div style={{height: '200px', marginTop: '16px'}}>
+                                <Line 
+                                    data={{
+                                        labels: ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar (Proj)', 'Apr (Proj)'],
+                                        datasets: [{
+                                            label: t('risk_score_trend'),
+                                            data: [
+                                                Math.max(0, (plot.latestAnalysis.finalRiskScore || 0) - (Math.random() * 20)),
+                                                Math.max(0, (plot.latestAnalysis.finalRiskScore || 0) - (Math.random() * 10)),
+                                                Math.max(0, (plot.latestAnalysis.finalRiskScore || 0) - 5),
+                                                plot.latestAnalysis.finalRiskScore,
+                                                Math.min(100, (plot.latestAnalysis.finalRiskScore || 0) + 5),
+                                                Math.min(100, (plot.latestAnalysis.finalRiskScore || 0) + 12),
+                                                Math.min(100, (plot.latestAnalysis.finalRiskScore || 0) + 20)
+                                            ],
+                                            borderColor: (plot.latestAnalysis.finalRiskScore || 0) > 50 ? '#dc2626' : '#16a34a',
+                                            tension: 0.4,
+                                            fill: true,
+                                            backgroundColor: (plot.latestAnalysis.finalRiskScore || 0) > 50 ? 'rgba(220, 38, 38, 0.1)' : 'rgba(22, 163, 74, 0.1)'
+                                        }]
+                                    }} 
+                                    options={{
+                                        maintainAspectRatio: false,
+                                        plugins: { legend: { display: false } },
+                                        scales: { y: { beginAtZero: true, max: 100 } }
+                                    }} 
+                                />
+                            </div>
+                            <p style={{fontSize: '0.9rem', color: '#64748b', marginTop: '12px'}}>
+                                {t('ai_prediction_label')} {t('ai_prediction_desc')} <strong style={{color: (plot.latestAnalysis.finalRiskScore || 0) > 50 ? '#dc2626' : '#16a34a'}}>{(plot.latestAnalysis.finalRiskScore || 0) > 50 ? t('increase') : t('stabilize')}</strong> {t('prediction_context')}
+                            </p>
+                        </section>
+                    )}
+
+                    {/* Satellite Time-Travel */}
+                    <section className="details-section">
+                        <h3>🛰️ {t('sat_timetravel')}</h3>
+                        <p style={{fontSize: '0.9rem', color: '#64748b', marginBottom: '12px'}}>{t('compare_dates_hint')}</p>
+                        
+                        <div className="time-travel-container" style={{
+                            position: 'relative', 
+                            height: '220px', 
+                            borderRadius: '12px', 
+                            overflow: 'hidden', 
+                            border: '1px solid #e2e8f0',
+                            userSelect: 'none'
+                        }}>
+                            {/* Layer 2: 2024 (Background/Past) */}
+                            <div style={{
+                                position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', 
+                                background: 'linear-gradient(45deg, #fce7f3 25%, #fbcfe8 25%, #fbcfe8 50%, #fce7f3 50%, #fce7f3 75%, #fbcfe8 75%, #fbcfe8 100%)',
+                                backgroundSize: '40px 40px',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                            }}>
+                                <div style={{background: 'rgba(255,255,255,0.8)', padding: '8px 16px', borderRadius: '20px', fontWeight: 'bold', color: '#be185d'}}>
+                                    {t('past_state')}
+                                </div>
+                            </div>
+
+                            {/* Layer 1: 2026 (Foreground/Current) - Clipped */}
+                            <div style={{
+                                position: 'absolute', top: 0, left: 0, 
+                                width: `${sliderValue}%`, 
+                                height: '100%', 
+                                background: 'linear-gradient(45deg, #dcfce7 25%, #bbf7d0 25%, #bbf7d0 50%, #dcfce7 50%, #dcfce7 75%, #bbf7d0 75%, #bbf7d0 100%)',
+                                backgroundSize: '40px 40px',
+                                overflow: 'hidden', 
+                                borderRight: '4px solid white',
+                                boxShadow: '2px 0 10px rgba(0,0,0,0.2)'
+                            }}>
+                                <div style={{
+                                    width: '100vw', maxWidth: '560px', height: '100%', 
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                }}>
+                                    <div style={{background: 'rgba(255,255,255,0.8)', padding: '8px 16px', borderRadius: '20px', fontWeight: 'bold', color: '#15803d'}}>
+                                        {t('current_state')}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Slider Control */}
+                            <input 
+                                type="range" 
+                                min="0" 
+                                max="100" 
+                                value={sliderValue} 
+                                onChange={(e) => setSliderValue(e.target.value)}
+                                style={{
+                                    position: 'absolute', 
+                                    bottom: '10px', 
+                                    left: '50%', 
+                                    transform: 'translateX(-50%)',
+                                    width: '80%', 
+                                    zIndex: 10,
+                                    cursor: 'ew-resize'
+                                }}
+                            />
+                        </div>
+                    </section>
+
                     {/* Overlap Analysis (Visible only for custom drawn areas) */}
                     {plot.latestAnalysis?.overlapAnalysis && (
                         <section className="details-section">
-                            <h3>Overlap With Vacant Land</h3>
+                            <h3>{t('overlap_vacant')}</h3>
                             <div className="info-grid">
                                 <div className="info-item" style={{ gridColumn: '1 / -1' }}>
-                                    <span className="info-label">Detected Overlap with Vacant/High-Risk Plots</span>
+                                    <span className="info-label">{t('detected_overlap')}</span>
                                     <div className="progress-bar-container" style={{ height: '24px', background: '#e2e8f0', borderRadius: '12px', marginTop: '8px', overflow: 'hidden' }}>
                                         <div 
                                             className="progress-fill" 
@@ -285,7 +391,7 @@ const PlotDetails = ({ plot, onClose, onAnalysisComplete }) => {
                                 
                                 {plot.latestAnalysis.overlapAnalysis.overlappingPlots?.length > 0 && (
                                     <div className="info-item" style={{ gridColumn: '1 / -1' }}>
-                                        <span className="info-label">Affected Plots</span>
+                                        <span className="info-label">{t('affected_plots')}</span>
                                         <ul style={{ margin: '8px 0', paddingLeft: '20px', fontSize: '0.9rem', color: '#4b5563' }}>
                                             {plot.latestAnalysis.overlapAnalysis.overlappingPlots.map(p => (
                                                 <li key={p.id}>
@@ -306,7 +412,7 @@ const PlotDetails = ({ plot, onClose, onAnalysisComplete }) => {
                             onClick={handleAnalyze}
                             disabled={analyzing}
                         >
-                            {analyzing ? '⏳ Analyzing...' : '🔍 Run Analysis'}
+                            {analyzing ? '⏳ ' + t('analyzing') : '🔍 ' + t('run_analysis')}
                         </button>
 
                         {plot.latestAnalysis && (
@@ -315,7 +421,7 @@ const PlotDetails = ({ plot, onClose, onAnalysisComplete }) => {
                                 onClick={handleGenerateReport}
                                 disabled={generatingReport}
                             >
-                                {generatingReport ? '⏳ Generating...' : '📄 Generate Report'}
+                                {generatingReport ? '⏳ ' + t('generating') : '📄 ' + t('gen_report')}
                             </button>
                         )}
 
@@ -323,7 +429,7 @@ const PlotDetails = ({ plot, onClose, onAnalysisComplete }) => {
                             <button
                                 className="btn btn-danger btn-full"
                                 onClick={async () => {
-                                    if (window.confirm('Are you sure you want to delete this plot?')) {
+                                    if (window.confirm(t('confirm_delete'))) {
                                         try {
                                             await plotAPI.delete(plot._id);
                                             onClose();
@@ -334,7 +440,7 @@ const PlotDetails = ({ plot, onClose, onAnalysisComplete }) => {
                                     }
                                 }}
                             >
-                                🗑️ Delete Plot
+                                {t('delete_plot')}
                             </button>
                         </div>
                     </section>

@@ -3,13 +3,16 @@ import { MapContainer, TileLayer, GeoJSON, Popup, useMapEvents, Polyline, Polygo
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './MapView.css';
+import './MapView.css';
 import { plotAPI } from '../services/api';
+import { calculatePolygonArea, calculatePolygonPerimeter } from '../utils/geometry';
 
 const MapView = ({ plots, onPlotClick, selectedPlot }) => {
     const mapRef = useRef(null);
     const [center] = useState([28.6139, 77.2090]); // Default: Delhi, India
     const [zoom] = useState(12);
     const [mapType, setMapType] = useState('standard'); // 'standard' or 'satellite'
+    const [showHeatmap, setShowHeatmap] = useState(false);
 
     // Drawing state
     const [isDrawMode, setIsDrawMode] = useState(false);
@@ -424,7 +427,20 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
     // Style function for GeoJSON features
     const plotStyle = (feature) => {
         const plot = plots.find(p => p._id === feature.properties.id);
+        const riskScore = plot?.latestAnalysis?.finalRiskScore || 0;
 
+        // HEATMAP MODE: Override everything
+        if (showHeatmap) {
+             if (riskScore > 70) {
+                return { fillColor: '#ef4444', fillOpacity: 0.8, color: '#ef4444', weight: 0 }; // High Risk
+            } else if (riskScore > 40) {
+                return { fillColor: '#f97316', fillOpacity: 0.5, color: '#f97316', weight: 0 }; // Medium Risk
+            } else {
+                return { fillColor: '#94a3b8', fillOpacity: 0.1, color: 'transparent', weight: 0 }; // Low/No Risk
+            }
+        }
+
+        // Standard Styling
         // If this is a usage zone feature, use usage type color
         if (feature.properties.usageType) {
             return {
@@ -435,9 +451,6 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
                 opacity: 0.8
             };
         }
-
-        // Otherwise use risk-based color (for plots without usage zones)
-        const riskScore = plot?.latestAnalysis?.finalRiskScore;
 
         return {
             fillColor: getRiskColor(riskScore),
@@ -572,119 +585,84 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
                     >
                         ✕ Cancel
                     </button>
-                    {drawPoints.length >= 3 && (
-                        <>
-                            <button
-                                className="toggle-btn active"
-                                style={{ padding: '2px 8px', fontSize: '0.75rem', background: '#3b82f6', color: 'white' }}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleOpenAnalysisModal();
-                                }}
-                            >
-                                🔍 Analyze
-                            </button>
-                            <button
-                                className="toggle-btn"
-                                style={{ padding: '2px 8px', fontSize: '0.75rem', background: '#10b981', color: 'white' }}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleOpenInGeoJSONIO();
-                                }}
-                            >
-                                🌐 Open in geojson.io
-                            </button>
-                        </>
-                    )}
                 </div>
             )}
 
-            {/* Coordinates Panel */}
-            {isDrawMode && showCoordinates && (
-                <div className="coordinates-panel">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                        <h4 style={{ margin: 0, fontSize: '0.9rem' }}>
-                            📍 Coordinates {drawPoints.length > 0 && `(${drawPoints.length} points)`}
-                        </h4>
-                        {drawPoints.length > 0 && (
-                            <div>
-                                <button
-                                    onClick={handleCopyCoordinates}
-                                    style={{
-                                        padding: '4px 8px',
-                                        fontSize: '0.7rem',
-                                        background: '#3b82f6',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '4px',
-                                        cursor: 'pointer',
-                                        marginRight: '4px'
-                                    }}
-                                >
-                                    📋 Copy Coords
-                                </button>
-                                <button
-                                    onClick={handleCopyGeoJSON}
-                                    style={{
-                                        padding: '4px 8px',
-                                        fontSize: '0.7rem',
-                                        background: '#10b981',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '4px',
-                                        cursor: 'pointer'
-                                    }}
-                                >
-                                    📋 Copy GeoJSON
-                                </button>
-                                <button
-                                    onClick={() => setShowCoordinates(false)}
-                                    style={{
-                                        padding: '4px 8px',
-                                        fontSize: '0.7rem',
-                                        background: '#6b7280',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '4px',
-                                        cursor: 'pointer',
-                                        marginLeft: '4px'
-                                    }}
-                                >
-                                    ✕
-                                </button>
-                            </div>
-                        )}
+            {/* Draw Feature Panel (Right Side) */}
+            {isDrawMode && (
+                <div className="draw-panel animate-slide-left">
+                    <div className="draw-panel-header">
+                        <h3>📏 Custom Area Analysis</h3>
+                        <button onClick={handleCancelDraw} className="close-btn">✕</button>
                     </div>
-                    <div style={{
-                        maxHeight: '200px',
-                        overflowY: 'auto',
-                        fontSize: '0.75rem',
-                        fontFamily: 'monospace',
-                        background: '#f8fafc',
-                        padding: '8px',
-                        borderRadius: '4px',
-                        minHeight: '60px'
-                    }}>
-                        {drawPoints.length === 0 ? (
-                            <div style={{
-                                color: '#6b7280',
-                                fontStyle: 'italic',
-                                textAlign: 'center',
-                                padding: '12px 0'
-                            }}>
-                                Click on the map to add points.<br />
-                                Coordinates will appear here.
-                            </div>
-                        ) : (
-                            drawPoints.map((point, i) => (
-                                <div key={i} style={{ marginBottom: '4px' }}>
-                                    <strong>Point {i + 1}:</strong> [{point[0].toFixed(6)}, {point[1].toFixed(6)}]
-                                </div>
-                            ))
-                        )}
+                    
+                    <div className="draw-stats">
+                        <div className="stat-item">
+                            <span className="stat-label">Area</span>
+                            <span className="stat-value">
+                                {(calculatePolygonArea(drawPoints)).toLocaleString(undefined, {maximumFractionDigits: 0})} m²
+                                <small>({(calculatePolygonArea(drawPoints) * 10.764).toLocaleString(undefined, {maximumFractionDigits: 0})} sqft)</small>
+                            </span>
+                        </div>
+                        <div className="stat-item">
+                            <span className="stat-label">Perimeter</span>
+                            <span className="stat-value">
+                                {(calculatePolygonPerimeter(drawPoints)).toLocaleString(undefined, {maximumFractionDigits: 1})} m
+                            </span>
+                        </div>
+                        <div className="stat-item">
+                            <span className="stat-label">Points</span>
+                            <span className="stat-value">{drawPoints.length}</span>
+                        </div>
                     </div>
+
+                    <div className="draw-actions">
+                        <button
+                            className="action-btn primary"
+                            disabled={drawPoints.length < 3}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenAnalysisModal();
+                            }}
+                        >
+                            🔍 Analyze with AI
+                        </button>
+                        <div className="action-row">
+                            <button className="action-btn secondary" onClick={handleCopyCoordinates}>
+                                📋 Copy Coords
+                            </button>
+                            <button className="action-btn secondary" onClick={handleCopyGeoJSON}>
+                                🌐 Copy GeoJSON
+                            </button>
+                        </div>
+                         <button
+                            className="action-btn danger"
+                            onClick={handleCancelDraw}
+                        >
+                            🗑️ Discard
+                        </button>
+                    </div>
+
+                     {/* Collapsible Coordinates List */}
+                     <div className="coords-list">
+                        <h4>Coordinates</h4>
+                         <div className="coords-scroll">
+                            {drawPoints.length === 0 ? (
+                                <p className="empty-text">Click map to add points...</p>
+                            ) : (
+                                drawPoints.map((point, i) => (
+                                    <div key={i} className="coord-row">
+                                        <span>P{i + 1}</span>
+                                        <code>{point[0].toFixed(5)}, {point[1].toFixed(5)}</code>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                     </div>
                 </div>
             )}
+
+
 
             {/* Analysis Modal */}
             {showAnalysisModal && (
@@ -852,6 +830,17 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
                     }}
                 >
                     🛰️ Satellite
+                </button>
+                <div style={{ width: '1px', background: '#e2e8f0', margin: '0 4px' }}></div>
+                <button
+                    className={`toggle-btn ${showHeatmap ? 'active' : ''}`}
+                    style={{ background: showHeatmap ? '#ef4444' : 'white', color: showHeatmap ? 'white' : '#ef4444', borderColor: '#ef4444' }}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setShowHeatmap(!showHeatmap);
+                    }}
+                >
+                    🔥 Heatmap
                 </button>
             </div>
 
