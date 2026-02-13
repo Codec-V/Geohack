@@ -41,6 +41,12 @@ function App() {
     }
   };
 
+   const handleUploadSuccess = () => {
+    fetchPlots();
+    setShowUpload(false);
+  };
+
+
   const handleDeletePlot = async (e, plotId) => {
     e.stopPropagation();
     if (window.confirm('Are you sure you want to delete this plot? This action cannot be undone.')) {
