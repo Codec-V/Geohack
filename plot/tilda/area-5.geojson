@@ -1,0 +1,35 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Custom Plot",
+        "source": "GeoCompliance Drawing Tool"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              81.80967414378303,
+              21.49649012073257
+            ],
+            [
+              81.81000673770087,
+              21.49587167687736
+            ],
+            [
+              81.80823647975105,
+              21.49587167687736
+            ],
+            [
+              81.80967414378303,
+              21.49649012073257
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}
