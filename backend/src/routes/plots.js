@@ -379,6 +379,195 @@ router.post('/analyze-comparison', async (req, res) => {
 });
 
 /**
+ * POST /api/plots/analyze-batch-comparison
+ * Batch compare all area files from registered-land and occupied-land directories
+ */
+router.post('/analyze-batch-comparison', async (req, res) => {
+    try {
+        const fs = await import('fs/promises');
+        const path = await import('path');
+        
+        // Define paths to the directories
+        const basePath = path.join(process.cwd(), '..', 'plot', 'tilda');
+        const registeredLandPath = path.join(basePath, 'registered-land');
+        const occupiedLandPath = path.join(basePath, 'occupied-land');
+
+        const comparisons = [];
+        let totalOverlapArea = 0;
+        let totalEncroachmentArea = 0;
+        let totalUnusedArea = 0;
+
+        // Process area1 through area10
+        for (let i = 1; i <= 10; i++) {
+            const areaName = `area${i}`;
+            const registeredFile = path.join(registeredLandPath, `${areaName}.geojson`);
+            const occupiedFile = path.join(occupiedLandPath, `${areaName}.geojson`);
+
+            try {
+                // Read both GeoJSON files
+                const registeredData = JSON.parse(await fs.readFile(registeredFile, 'utf-8'));
+                const occupiedData = JSON.parse(await fs.readFile(occupiedFile, 'utf-8'));
+
+                // Extract all features and union them into a single geometry
+                const getUnionGeometry = (geojson) => {
+                    if (!geojson.features || geojson.features.length === 0) return null;
+                    
+                    let result = geojson.features[0];
+                    for (let j = 1; j < geojson.features.length; j++) {
+                        try {
+                            const union = turf.union(turf.featureCollection([result, geojson.features[j]]));
+                            if (union) result = union;
+                        } catch (e) {
+                            console.warn(`Union failed at index ${j}:`, e.message);
+                        }
+                    }
+                    return result;
+                };
+
+                const referenceFeature = getUnionGeometry(registeredData);
+                const occupiedFeature = getUnionGeometry(occupiedData);
+
+                if (!referenceFeature || !occupiedFeature) {
+                    throw new Error('Missing features in registered or occupied data');
+                }
+
+                // Calculate spatial relationships
+                const features = [];
+                let overlapArea = 0;
+                let encroachmentArea = 0;
+                let unusedArea = 0;
+
+                // 1. Overlap (Intersection) - Valid usage (Blue)
+                try {
+                    const intersection = turf.intersect(turf.featureCollection([referenceFeature, occupiedFeature]));
+                    if (intersection) {
+                        overlapArea = turf.area(intersection);
+                        features.push({
+                            type: 'Feature',
+                            properties: {
+                                category: 'overlap',
+                                color: '#3b82f6', // Blue
+                                area: overlapArea,
+                                areaHectares: (overlapArea / 10000).toFixed(4),
+                                areaSqFt: (overlapArea * 10.764).toFixed(2)
+                            },
+                            geometry: intersection.geometry
+                        });
+                    }
+                } catch (err) {
+                    console.warn(`No intersection found for ${areaName}:`, err.message);
+                }
+
+                // 2. Encroachment (Drawn area outside reference) - Red
+                try {
+                    const encroachment = turf.difference(turf.featureCollection([occupiedFeature, referenceFeature]));
+                    if (encroachment) {
+                        encroachmentArea = turf.area(encroachment);
+                        if (encroachmentArea > 0.1) {
+                            features.push({
+                                type: 'Feature',
+                                properties: {
+                                    category: 'encroachment',
+                                    color: '#dc2626', // Red
+                                    area: encroachmentArea,
+                                    areaHectares: (encroachmentArea / 10000).toFixed(4),
+                                    areaSqFt: (encroachmentArea * 10.764).toFixed(2)
+                                },
+                                geometry: encroachment.geometry
+                            });
+                        }
+                    }
+                } catch (err) {
+                    console.warn(`No encroachment found for ${areaName}:`, err.message);
+                }
+
+                // 3. Unused (Reference area not covered by drawn) - Green
+                try {
+                    const unused = turf.difference(turf.featureCollection([referenceFeature, occupiedFeature]));
+                    if (unused) {
+                        unusedArea = turf.area(unused);
+                        if (unusedArea > 0.1) {
+                            features.push({
+                                type: 'Feature',
+                                properties: {
+                                    category: 'unused',
+                                    color: '#16a34a', // Green
+                                    area: unusedArea,
+                                    areaHectares: (unusedArea / 10000).toFixed(4),
+                                    areaSqFt: (unusedArea * 10.764).toFixed(2)
+                                },
+                                geometry: unused.geometry
+                            });
+                        }
+                    }
+                } catch (err) {
+                    console.warn(`No unused area found for ${areaName}:`, err.message);
+                }
+
+                // Add to totals
+                totalOverlapArea += overlapArea;
+                totalEncroachmentArea += encroachmentArea;
+                totalUnusedArea += unusedArea;
+
+                // Add comparison result
+                comparisons.push({
+                    areaName,
+                    features: {
+                        type: 'FeatureCollection',
+                        features: features
+                    },
+                    statistics: {
+                        overlapArea,
+                        overlapAreaSqFt: (overlapArea * 10.764).toFixed(2),
+                        encroachmentArea,
+                        encroachmentAreaSqFt: (encroachmentArea * 10.764).toFixed(2),
+                        unusedArea,
+                        unusedAreaSqFt: (unusedArea * 10.764).toFixed(2),
+                        totalRegisteredArea: turf.area(referenceFeature),
+                        totalOccupiedArea: turf.area(occupiedFeature)
+                    }
+                });
+
+            } catch (fileError) {
+                console.error(`Error processing ${areaName}:`, fileError.message);
+                comparisons.push({
+                    areaName,
+                    error: `Failed to process ${areaName}: ${fileError.message}`,
+                    features: { type: 'FeatureCollection', features: [] },
+                    statistics: {
+                        overlapArea: 0,
+                        encroachmentArea: 0,
+                        unusedArea: 0
+                    }
+                });
+            }
+        }
+
+        res.json({
+            success: true,
+            data: {
+                comparisons,
+                totals: {
+                    totalOverlapArea,
+                    totalOverlapAreaSqFt: (totalOverlapArea * 10.764).toFixed(2),
+                    totalEncroachmentArea,
+                    totalEncroachmentAreaSqFt: (totalEncroachmentArea * 10.764).toFixed(2),
+                    totalUnusedArea,
+                    totalUnusedAreaSqFt: (totalUnusedArea * 10.764).toFixed(2)
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error in batch comparison:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to perform batch comparison',
+            message: error.message
+        });
+    }
+});
+
+/**
  * POST /api/plots/:id/analyze
  * Trigger analysis for a specific plot
  */

@@ -26,6 +26,11 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
     const [analysisResults, setAnalysisResults] = useState(null);
     const [isAnalyzingComparison, setIsAnalyzingComparison] = useState(false);
 
+    // Batch comparison state
+    const [batchResults, setBatchResults] = useState(null);
+    const [isAnalyzingBatch, setIsAnalyzingBatch] = useState(false);
+    const [selectedBatchArea, setSelectedBatchArea] = useState('all');
+
     // Draggable state for instructions panel
     const [position, setPosition] = useState(null);
     const dragRef = useRef(null);
@@ -323,6 +328,32 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
         setDrawPoints([]);
         setShowCoordinates(false);
         setSelectedReferencePlotId('');
+    };
+
+    // Handle batch comparison
+    const handleBatchAnalysis = async () => {
+        try {
+            setIsAnalyzingBatch(true);
+            const response = await plotAPI.analyzeBatchComparison();
+            if (response.data.success) {
+                setBatchResults(response.data.data);
+                // Zoom to the area
+                if (mapRef.current) {
+                    mapRef.current.flyTo([21.495, 81.808], 15, { duration: 1.5 });
+                }
+            }
+        } catch (error) {
+            console.error('Batch analysis error:', error);
+            alert('Failed to perform batch analysis. Please try again.');
+        } finally {
+            setIsAnalyzingBatch(false);
+        }
+    };
+
+    // Clear batch results
+    const handleClearBatch = () => {
+        setBatchResults(null);
+        setSelectedBatchArea('all');
     };
 
     // Create GeoJSON from drawn points
@@ -847,6 +878,22 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
                 >
                     🔥 Heatmap
                 </button>
+                <div style={{ width: '1px', background: '#e2e8f0', margin: '0 4px' }}></div>
+                <button
+                    className={`toggle-btn ${batchResults ? 'active' : ''}`}
+                    style={{ background: batchResults ? '#10b981' : 'white', color: batchResults ? 'white' : '#10b981', borderColor: '#10b981' }}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (batchResults) {
+                            handleClearBatch();
+                        } else {
+                            handleBatchAnalysis();
+                        }
+                    }}
+                    disabled={isAnalyzingBatch}
+                >
+                    {isAnalyzingBatch ? '⏳ Loading...' : (batchResults ? '✓ Batch' : '📊 Batch Analysis')}
+                </button>
             </div>
 
             <MapContainer
@@ -875,7 +922,7 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
                 )}
 
                 {/* Render main plot boundaries */}
-                {plots.length > 0 && (
+                {plots.length > 0 && !batchResults && (
                     <GeoJSON
                         key={JSON.stringify(plotsGeoJSON)}
                         data={plotsGeoJSON}
@@ -885,7 +932,7 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
                 )}
 
                 {/* Render usage zones on top */}
-                {allUsageZones.features.length > 0 && (
+                {allUsageZones.features.length > 0 && !batchResults && (
                     <GeoJSON
                         key={`usage-zones-${JSON.stringify(allUsageZones)}`}
                         data={allUsageZones}
@@ -938,6 +985,74 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
                         }}
                     />
                 )}
+
+                {/* Render batch comparison results */}
+                {batchResults && batchResults.comparisons && (() => {
+                    const allBatchFeatures = [];
+                    batchResults.comparisons.forEach(comp => {
+                        comp.features.features.forEach(feature => {
+                            allBatchFeatures.push({
+                                ...feature,
+                                properties: {
+                                    ...feature.properties,
+                                    areaName: comp.areaName
+                                }
+                            });
+                        });
+                    });
+                    
+                    if (allBatchFeatures.length === 0) return null;
+                    
+                    return (
+                        <GeoJSON
+                            key={`batch-${JSON.stringify(batchResults)}`}
+                            data={{
+                                type: 'FeatureCollection',
+                                features: allBatchFeatures
+                            }}
+                            style={(feature) => ({
+                                fillColor: feature.properties.color,
+                                fillOpacity: 0.5,
+                                color: feature.properties.color,
+                                weight: 2,
+                                opacity: 0.9
+                            })}
+                            onEachFeature={(feature, layer) => {
+                                const categoryLabels = {
+                                    overlap: '🔵 Valid Overlap',
+                                    encroachment: '🔴 Encroachment',
+                                    unused: '🟢 Unused Area'
+                                };
+                                
+                                layer.bindPopup(`
+                                    <div style="min-width: 200px; font-family: system-ui, sans-serif;">
+                                        <h3 style="margin: 0 0 8px 0; font-size: 14px; color: ${feature.properties.color};">
+                                            ${categoryLabels[feature.properties.category]}
+                                        </h3>
+                                        <p style="margin: 4px 0; font-size: 12px;"><strong>Area:</strong> ${feature.properties.areaName}</p>
+                                        <p style="margin: 4px 0; font-size: 12px;"><strong>Size:</strong> ${feature.properties.areaSqFt} sq ft</p>
+                                        <p style="margin: 4px 0; font-size: 12px;"><strong>Hectares:</strong> ${feature.properties.areaHectares} ha</p>
+                                    </div>
+                                `);
+                                
+                                layer.on({
+                                    mouseover: (e) => {
+                                        e.target.setStyle({
+                                            fillOpacity: 0.8,
+                                            weight: 3
+                                        });
+                                    },
+                                    mouseout: (e) => {
+                                        e.target.setStyle({
+                                            fillOpacity: 0.5,
+                                            weight: 2
+                                        });
+                                    }
+                                });
+                            }}
+                        />
+                    );
+                })()}
 
                 {/* Drawn Polygon */}
                 {drawPoints.length > 0 && (

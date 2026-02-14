@@ -30,6 +30,10 @@ export const plotAPI = {
     analyzeComparison: (referencePlotId, drawnGeometry) => 
         api.post('/plots/analyze-comparison', { referencePlotId, drawnGeometry }),
 
+    // Batch analyze all areas from registered-land vs occupied-land
+    analyzeBatchComparison: () => 
+        api.post('/plots/analyze-batch-comparison'),
+
     // Get report
     getReport: (id) => api.get(`/plots/${id}/report`),
 

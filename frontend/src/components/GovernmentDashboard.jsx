@@ -60,7 +60,7 @@ const GovernmentDashboard = ({ onRefresh, lang = 'en', t = (s) => s, darkMode = 
     
     if (error) return <div className="dashboard-error">{error}</div>;
 
-    const vacantPlots = plots.filter(p => p.status === 'vacant' || (p.latestAnalysis?.finalRiskScore || 0) > 85);
+    const vacantPlots = plots.filter(p => (p.latestAnalysis?.finalRiskScore || 0) > 50);
 
     return (
         <div className="dashboard">
