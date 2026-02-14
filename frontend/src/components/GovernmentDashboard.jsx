@@ -5,6 +5,7 @@ import './Dashboard.css';
 import FinanceSection from './DashboardSections/FinanceSection';
 import LandUsageSection from './DashboardSections/LandUsageSection';
 import DevelopmentSection from './DashboardSections/DevelopmentSection';
+import ReAllotmentSection from './DashboardSections/ReAllotmentSection';
 
 import GISComparisonPanel from './GISComparisonPanel';
 
@@ -17,6 +18,12 @@ const GovernmentDashboard = ({ onRefresh, lang = 'en', t = (s) => s, darkMode = 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showGISPanel, setShowGISPanel] = useState(false);
+    
+    // New states for location and batch analysis
+    const [locations, setLocations] = useState([]);
+    const [selectedLocation, setSelectedLocation] = useState('tilda');
+    const [batchResults, setBatchResults] = useState(null);
+    const [analyzingBatch, setAnalyzingBatch] = useState(false);
 
     const currentDate = new Date().toLocaleDateString('en-GB', {
         day: '2-digit',
@@ -26,7 +33,33 @@ const GovernmentDashboard = ({ onRefresh, lang = 'en', t = (s) => s, darkMode = 
 
     useEffect(() => {
         fetchData();
+        fetchLocations();
     }, []);
+
+    useEffect(() => {
+        handleBatchAnalysis();
+    }, [selectedLocation]);
+
+    const fetchLocations = async () => {
+        try {
+            const res = await plotAPI.getLocations();
+            setLocations(res.data.data);
+        } catch (err) {
+            console.error('Error fetching locations:', err);
+        }
+    };
+
+    const handleBatchAnalysis = async () => {
+        try {
+            setAnalyzingBatch(true);
+            const res = await plotAPI.analyzeBatchComparison(selectedLocation);
+            setBatchResults(res.data.data);
+        } catch (err) {
+            console.error('Error analyzing batch:', err);
+        } finally {
+            setAnalyzingBatch(false);
+        }
+    };
 
     const fetchData = async () => {
         try {
@@ -71,7 +104,43 @@ const GovernmentDashboard = ({ onRefresh, lang = 'en', t = (s) => s, darkMode = 
                     <h1>{t('appTitle')}</h1>
                     <p className="subtitle">{t('govt_portal')} • {currentDate}</p>
                 </div>
-                <div style={{display: 'flex', gap: '12px'}}>
+                <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+                    {/* Location Selector "Dialog Box" Style */}
+                    <div className="location-selector-box" style={{
+                        display: 'flex', 
+                        flexDirection: 'column',
+                        background: darkMode ? '#1e293b' : 'white',
+                        padding: '6px 16px',
+                        borderRadius: '8px',
+                        border: `2px solid #6366f1`,
+                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                        minWidth: '200px'
+                    }}>
+                        <span style={{fontSize: '0.7rem', fontWeight: 'bold', color: '#6366f1', marginBottom: '2px'}}>🛰️ JURISDICTION SELECT</span>
+                        {locations.length > 0 ? (
+                            <select 
+                                value={selectedLocation}
+                                onChange={(e) => setSelectedLocation(e.target.value)}
+                                style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    fontWeight: '700',
+                                    fontSize: '1rem',
+                                    color: darkMode ? '#f8fafc' : '#1e293b',
+                                    cursor: 'pointer',
+                                    outline: 'none',
+                                    padding: '0'
+                                }}
+                            >
+                                {locations.map(loc => (
+                                    <option key={loc} value={loc} style={{background: darkMode ? '#1e293b' : 'white'}}>{loc.toUpperCase()}</option>
+                                ))}
+                            </select>
+                        ) : (
+                            <span style={{fontSize: '0.9rem', color: '#94a3b8'}}>Scanning folders...</span>
+                        )}
+                    </div>
+
                      <button className="btn" onClick={() => setShowGISPanel(!showGISPanel)} style={{
                         padding: '8px 16px', 
                         background: showGISPanel ? '#4f46e5' : (darkMode ? '#1e293b' : 'white'), 
@@ -118,6 +187,67 @@ const GovernmentDashboard = ({ onRefresh, lang = 'en', t = (s) => s, darkMode = 
                 {/* Section 3: Development Growth */}
                 <div className="animate-fade-in dashboard-section-3">
                     <DevelopmentSection plots={plots} t={t} darkMode={darkMode} />
+                </div>
+
+                {/* Section: Real-time Area Analysis Results */}
+                <div className="animate-fade-in dashboard-section-4" style={{marginTop: '32px'}}>
+                    <div className="table-section" style={{borderRadius: '12px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.1)'}}>
+                        <div className="table-header" style={{background: darkMode ? '#111827' : '#f8fafc', borderBottom: `1px solid ${darkMode ? '#374151' : '#e2e8f0'}`}}>
+                            <h2 style={{color: darkMode ? '#f9fafb' : '#1e293b', fontSize: '1.25rem'}}>
+                                📊 Real-time Jurisdictional Audit - {selectedLocation.toUpperCase()}
+                            </h2>
+                            {analyzingBatch && <span style={{fontSize: '0.8rem', color: '#6366f1'}}>Recalculating...</span>}
+                        </div>
+                        <div className="data-table-container" style={{maxHeight: '400px', overflowY: 'auto'}}>
+                            <table className="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Area ID</th>
+                                        <th>Registered (Ref)</th>
+                                        <th>Occupied (Actual)</th>
+                                        <th>Overlap (Valid)</th>
+                                        <th>Encroachment</th>
+                                        <th>Unused Land</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {/* Show Total at the start as requested */}
+                                    {batchResults && batchResults.totals ? (
+                                        <tr style={{background: darkMode ? '#1f2937' : '#f1f5f9', fontWeight: 'bold', borderBottom: '2px solid #cbd5e1'}}>
+                                            <td style={{color: '#6366f1'}}>TOTAL SUMMARY</td>
+                                            <td>{(batchResults.totals.totalOverlapArea + batchResults.totals.totalUnusedArea).toFixed(2)} m²</td>
+                                            <td>{(batchResults.totals.totalOverlapArea + batchResults.totals.totalEncroachmentArea).toFixed(2)} m²</td>
+                                            <td style={{color: '#3b82f6'}}>{batchResults.totals.totalOverlapArea.toFixed(2)} m²</td>
+                                            <td style={{color: '#dc2626'}}>{batchResults.totals.totalEncroachmentArea.toFixed(2)} m²</td>
+                                            <td style={{color: '#16a34a'}}>{batchResults.totals.totalUnusedArea.toFixed(2)} m²</td>
+                                        </tr>
+                                    ) : null}
+                                    
+                                    {/* Detailed Area Comparison */}
+                                    {batchResults && batchResults.comparisons && batchResults.comparisons.length > 0 ? (
+                                        batchResults.comparisons.map((area, idx) => (
+                                            <tr key={idx}>
+                                                <td style={{fontWeight: '600'}}>{area.areaName.toUpperCase()}</td>
+                                                <td>{area.statistics.totalRegisteredArea.toFixed(2)} m²</td>
+                                                <td>{area.statistics.totalOccupiedArea.toFixed(2)} m²</td>
+                                                <td style={{color: '#3b82f6'}}>{area.statistics.overlapArea.toFixed(2)} m²</td>
+                                                <td style={{color: '#dc2626'}}>{area.statistics.encroachmentArea.toFixed(2)} m²</td>
+                                                <td style={{color: '#16a34a'}}>{area.statistics.unusedArea.toFixed(2)} m²</td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        !batchResults && (
+                                            <tr>
+                                                <td colSpan="6" style={{textAlign: 'center', padding: '20px'}}>
+                                                    {analyzingBatch ? '⌛ Recalculating Area Statistics...' : 'No historical data for this jurisdiction'}
+                                                </td>
+                                            </tr>
+                                        )
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Section 4: Critical Alerts & Action */}
@@ -192,58 +322,8 @@ const GovernmentDashboard = ({ onRefresh, lang = 'en', t = (s) => s, darkMode = 
                     </div>
                 </div>
 
-                {/* Section 5: Re-allotment Recommendations */}
-                <div className="animate-fade-in dashboard-section-3" style={{marginTop: '32px'}}>
-                   <div className="table-section" style={{borderRadius: '12px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.1)'}}>
-                        <div className="table-header" style={{background: '#f0fdf4', borderBottom: '1px solid #bbf7d0'}}>
-                            <h2 style={{color: '#166534', fontSize: '1.25rem'}}>♻️ {t('reallotment')}</h2>
-                            <span className="total-area" style={{color: '#15803d'}}>{t('vacant_lands')}</span>
-                        </div>
-                        <div className="data-table-container">
-                            <table className="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>{t('plot_no')}</th>
-                                        <th>{t('area_size')}</th>
-                                        <th>{t('reason_reallotment')}</th>
-                                        <th>{t('est_value')}</th>
-                                        <th>{t('status')}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {vacantPlots.slice(0, 5).map((plot, index) => (
-                                        <tr key={plot._id || index}>
-                                            <td style={{fontWeight: 500}}>{plot.plotId}</td>
-                                            <td>{plot.approvedArea?.toLocaleString()} sqft</td>
-                                            <td>
-                                                {plot.status === 'vacant' ? t('hist_vacant') : t('high_violation_risk')}
-                                            </td>
-                                            <td style={{fontWeight: '600', color: '#1e293b'}}>
-                                                ₹{(plot.approvedArea * (plot.marketValuePerSqMeter || 5000)).toLocaleString()}
-                                            </td>
-                                            <td>
-                                                <span style={{
-                                                    background: '#166534',
-                                                    color: 'white',
-                                                    padding: '4px 8px',
-                                                    borderRadius: '12px',
-                                                    fontSize: '0.75rem',
-                                                    fontWeight: '600'
-                                                }}>
-                                                    {t('ready_issue')}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    {vacantPlots.length === 0 && (
-                                        <tr>
-                                            <td colSpan="5" style={{textAlign: 'center', padding: '24px'}}>{t('no_plots_reallotment')}</td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                <div className="animate-fade-in dashboard-section-4" style={{marginTop: '32px'}}>
+                   <ReAllotmentSection plots={plots} t={t} darkMode={darkMode} />
                 </div>
 
             </div>

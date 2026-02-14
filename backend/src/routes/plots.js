@@ -31,6 +31,28 @@ router.get('/', async (req, res) => {
 });
 
 /**
+ * GET /api/plots/locations
+ * List all available location directories in the plot folder
+ */
+router.get('/locations', async (req, res) => {
+    try {
+        const fs = await import('fs/promises');
+        const path = await import('path');
+        const plotPath = path.join(process.cwd(), '..', 'plot');
+        
+        const entries = await fs.readdir(plotPath, { withFileTypes: true });
+        const locations = entries
+            .filter(dirent => dirent.isDirectory())
+            .map(dirent => dirent.name);
+            
+        res.json({ success: true, data: locations });
+    } catch (error) {
+        console.error('Error listing locations:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+/**
  * GET /api/plots/:id
  * Get specific plot details
  */
@@ -387,160 +409,172 @@ router.post('/analyze-batch-comparison', async (req, res) => {
         const fs = await import('fs/promises');
         const path = await import('path');
         
+        const location = req.body.location || 'tilda';
+        
         // Define paths to the directories
-        const basePath = path.join(process.cwd(), '..', 'plot', 'tilda');
+        const basePath = path.join(process.cwd(), '..', 'plot', location);
         const registeredLandPath = path.join(basePath, 'registered-land');
         const occupiedLandPath = path.join(basePath, 'occupied-land');
 
-        const comparisons = [];
-        let totalOverlapArea = 0;
-        let totalEncroachmentArea = 0;
-        let totalUnusedArea = 0;
+        const allRegisteredFeatures = [];
+        const allOccupiedFeatures = [];
 
-        // Process area1 through area10
+        // 1. Gather ALL features from ALL files first
         for (let i = 1; i <= 10; i++) {
             const areaName = `area${i}`;
             const registeredFile = path.join(registeredLandPath, `${areaName}.geojson`);
             const occupiedFile = path.join(occupiedLandPath, `${areaName}.geojson`);
 
             try {
-                // Read both GeoJSON files
-                const registeredData = JSON.parse(await fs.readFile(registeredFile, 'utf-8'));
-                const occupiedData = JSON.parse(await fs.readFile(occupiedFile, 'utf-8'));
-
-                // Extract all features and union them into a single geometry
-                const getUnionGeometry = (geojson) => {
-                    if (!geojson.features || geojson.features.length === 0) return null;
-                    
-                    let result = geojson.features[0];
-                    for (let j = 1; j < geojson.features.length; j++) {
-                        try {
-                            const union = turf.union(turf.featureCollection([result, geojson.features[j]]));
-                            if (union) result = union;
-                        } catch (e) {
-                            console.warn(`Union failed at index ${j}:`, e.message);
-                        }
-                    }
-                    return result;
-                };
-
-                const referenceFeature = getUnionGeometry(registeredData);
-                const occupiedFeature = getUnionGeometry(occupiedData);
-
-                if (!referenceFeature || !occupiedFeature) {
-                    throw new Error('Missing features in registered or occupied data');
-                }
-
-                // Calculate spatial relationships
-                const features = [];
-                let overlapArea = 0;
-                let encroachmentArea = 0;
-                let unusedArea = 0;
-
-                // 1. Overlap (Intersection) - Valid usage (Blue)
-                try {
-                    const intersection = turf.intersect(turf.featureCollection([referenceFeature, occupiedFeature]));
-                    if (intersection) {
-                        overlapArea = turf.area(intersection);
-                        features.push({
-                            type: 'Feature',
-                            properties: {
-                                category: 'overlap',
-                                color: '#3b82f6', // Blue
-                                area: overlapArea,
-                                areaHectares: (overlapArea / 10000).toFixed(4),
-                                areaSqFt: (overlapArea * 10.764).toFixed(2)
-                            },
-                            geometry: intersection.geometry
-                        });
-                    }
-                } catch (err) {
-                    console.warn(`No intersection found for ${areaName}:`, err.message);
-                }
-
-                // 2. Encroachment (Drawn area outside reference) - Red
-                try {
-                    const encroachment = turf.difference(turf.featureCollection([occupiedFeature, referenceFeature]));
-                    if (encroachment) {
-                        encroachmentArea = turf.area(encroachment);
-                        if (encroachmentArea > 0.1) {
-                            features.push({
-                                type: 'Feature',
-                                properties: {
-                                    category: 'encroachment',
-                                    color: '#dc2626', // Red
-                                    area: encroachmentArea,
-                                    areaHectares: (encroachmentArea / 10000).toFixed(4),
-                                    areaSqFt: (encroachmentArea * 10.764).toFixed(2)
-                                },
-                                geometry: encroachment.geometry
-                            });
-                        }
-                    }
-                } catch (err) {
-                    console.warn(`No encroachment found for ${areaName}:`, err.message);
-                }
-
-                // 3. Unused (Reference area not covered by drawn) - Green
-                try {
-                    const unused = turf.difference(turf.featureCollection([referenceFeature, occupiedFeature]));
-                    if (unused) {
-                        unusedArea = turf.area(unused);
-                        if (unusedArea > 0.1) {
-                            features.push({
-                                type: 'Feature',
-                                properties: {
-                                    category: 'unused',
-                                    color: '#16a34a', // Green
-                                    area: unusedArea,
-                                    areaHectares: (unusedArea / 10000).toFixed(4),
-                                    areaSqFt: (unusedArea * 10.764).toFixed(2)
-                                },
-                                geometry: unused.geometry
-                            });
-                        }
-                    }
-                } catch (err) {
-                    console.warn(`No unused area found for ${areaName}:`, err.message);
-                }
-
-                // Add to totals
-                totalOverlapArea += overlapArea;
-                totalEncroachmentArea += encroachmentArea;
-                totalUnusedArea += unusedArea;
-
-                // Add comparison result
-                comparisons.push({
-                    areaName,
-                    features: {
-                        type: 'FeatureCollection',
-                        features: features
-                    },
-                    statistics: {
-                        overlapArea,
-                        overlapAreaSqFt: (overlapArea * 10.764).toFixed(2),
-                        encroachmentArea,
-                        encroachmentAreaSqFt: (encroachmentArea * 10.764).toFixed(2),
-                        unusedArea,
-                        unusedAreaSqFt: (unusedArea * 10.764).toFixed(2),
-                        totalRegisteredArea: turf.area(referenceFeature),
-                        totalOccupiedArea: turf.area(occupiedFeature)
-                    }
-                });
-
-            } catch (fileError) {
-                console.error(`Error processing ${areaName}:`, fileError.message);
-                comparisons.push({
-                    areaName,
-                    error: `Failed to process ${areaName}: ${fileError.message}`,
-                    features: { type: 'FeatureCollection', features: [] },
-                    statistics: {
-                        overlapArea: 0,
-                        encroachmentArea: 0,
-                        unusedArea: 0
-                    }
-                });
+                // Read Registered data
+                const regData = JSON.parse(await fs.readFile(registeredFile, 'utf-8'));
+                if (regData.features) allRegisteredFeatures.push(...regData.features);
+            } catch (e) {
+                console.warn(`Could not read registered ${areaName}:`, e.message);
             }
+
+            try {
+                // Read Occupied data
+                const occData = JSON.parse(await fs.readFile(occupiedFile, 'utf-8'));
+                if (occData.features) allOccupiedFeatures.push(...occData.features);
+            } catch (e) {
+                console.warn(`Could not read occupied ${areaName}:`, e.message);
+            }
+        }
+
+        if (allRegisteredFeatures.length === 0 || allOccupiedFeatures.length === 0) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "No features found in registered or occupied directories" 
+            });
+        }
+
+        // 2. Create Unions for global analysis
+        const getUnion = (features) => {
+            if (features.length === 0) return null;
+            let result = features[0];
+            for (let i = 1; i < features.length; i++) {
+                try {
+                    const union = turf.union(turf.featureCollection([result, features[i]]));
+                    if (union) result = union;
+                } catch (e) {
+                    console.warn("Union iteration failed:", e.message);
+                }
+            }
+            return result;
+        };
+
+        const globalRegistered = getUnion(allRegisteredFeatures);
+        const globalOccupied = getUnion(allOccupiedFeatures);
+
+        // 3. Perform Granular per-area analysis with Global context
+        const comparisons = [];
+        let totalOverlapArea = 0;
+        let totalEncroachmentArea = 0;
+        let totalUnusedArea = 0;
+
+        for (let i = 1; i <= 10; i++) {
+            const areaName = `area${i}`;
+            const areaRegisteredFile = path.join(registeredLandPath, `${areaName}.geojson`);
+            const areaOccupiedFile = path.join(occupiedLandPath, `${areaName}.geojson`);
+
+            try {
+                const regData = JSON.parse(await fs.readFile(areaRegisteredFile, 'utf-8'));
+                const occData = JSON.parse(await fs.readFile(areaOccupiedFile, 'utf-8'));
+                
+                const areaReg = getUnion(regData.features);
+                const areaOcc = getUnion(occData.features);
+
+                const areaFeatures = [];
+                let areaOverlap = 0;
+                let areaEncroachment = 0;
+                let areaUnused = 0;
+
+                // A. Overlap (Area Reg INTERSECT Global Occ) -> Valid usage for THIS area
+                if (areaReg) {
+                    try {
+                        const intersect = turf.intersect(turf.featureCollection([areaReg, globalOccupied]));
+                        if (intersect) {
+                            areaOverlap = turf.area(intersect);
+                            areaFeatures.push({
+                                type: 'Feature',
+                                properties: { 
+                                    category: 'overlap', 
+                                    color: '#3b82f6', 
+                                    area: areaOverlap, 
+                                    areaHectares: (areaOverlap / 10000).toFixed(4),
+                                    areaSqFt: (areaOverlap * 10.764).toFixed(2),
+                                    areaName 
+                                },
+                                geometry: intersect.geometry
+                            });
+                        }
+                    } catch (e) {}
+
+                    // B. Unused (Area Reg MINUS Global Occ) -> Registered but not used
+                    try {
+                        const unused = turf.difference(turf.featureCollection([areaReg, globalOccupied]));
+                        if (unused) {
+                            areaUnused = turf.area(unused);
+                            if (areaUnused > 0.1) {
+                                areaFeatures.push({
+                                    type: 'Feature',
+                                    properties: { 
+                                        category: 'unused', 
+                                        color: '#16a34a', 
+                                        area: areaUnused, 
+                                        areaHectares: (areaUnused / 10000).toFixed(4),
+                                        areaSqFt: (areaUnused * 10.764).toFixed(2),
+                                        areaName 
+                                    },
+                                    geometry: unused.geometry
+                                });
+                            }
+                        }
+                    } catch (e) {}
+                }
+
+                // C. Encroachment (Area Occ MINUS Global Reg) -> THIS area's occupied features that are OUTSIDE ALL registered land
+                if (areaOcc) {
+                    try {
+                        const encroachment = turf.difference(turf.featureCollection([areaOcc, globalRegistered]));
+                        if (encroachment) {
+                            areaEncroachment = turf.area(encroachment);
+                            if (areaEncroachment > 0.1) {
+                                areaFeatures.push({
+                                    type: 'Feature',
+                                    properties: { 
+                                        category: 'encroachment', 
+                                        color: '#dc2626', 
+                                        area: areaEncroachment, 
+                                        areaHectares: (areaEncroachment / 10000).toFixed(4),
+                                        areaSqFt: (areaEncroachment * 10.764).toFixed(2),
+                                        areaName 
+                                    },
+                                    geometry: encroachment.geometry
+                                });
+                            }
+                        }
+                    } catch (e) {}
+                }
+
+                totalOverlapArea += areaOverlap;
+                totalUnusedArea += areaUnused;
+                totalEncroachmentArea += areaEncroachment;
+
+                comparisons.push({
+                    areaName,
+                    features: { type: "FeatureCollection", features: areaFeatures },
+                    statistics: {
+                        totalRegisteredArea: areaReg ? turf.area(areaReg) : 0,
+                        totalOccupiedArea: areaOcc ? turf.area(areaOcc) : 0,
+                        overlapArea: areaOverlap,
+                        unusedArea: areaUnused,
+                        encroachmentArea: areaEncroachment
+                    }
+                });
+
+            } catch (e) { /* skip */ }
         }
 
         res.json({
@@ -549,11 +583,8 @@ router.post('/analyze-batch-comparison', async (req, res) => {
                 comparisons,
                 totals: {
                     totalOverlapArea,
-                    totalOverlapAreaSqFt: (totalOverlapArea * 10.764).toFixed(2),
                     totalEncroachmentArea,
-                    totalEncroachmentAreaSqFt: (totalEncroachmentArea * 10.764).toFixed(2),
-                    totalUnusedArea,
-                    totalUnusedAreaSqFt: (totalUnusedArea * 10.764).toFixed(2)
+                    totalUnusedArea
                 }
             }
         });

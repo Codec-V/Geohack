@@ -27,12 +27,11 @@ export const plotAPI = {
     analyzeCustom: (geometry) => api.post('/plots/analyze-custom', { geometry }),
 
     // Analyze comparison between drawn polygon and reference plot
-    analyzeComparison: (referencePlotId, drawnGeometry) => 
+    analyzeComparison: (referencePlotId, drawnGeometry) =>
         api.post('/plots/analyze-comparison', { referencePlotId, drawnGeometry }),
 
     // Batch analyze all areas from registered-land vs occupied-land
-    analyzeBatchComparison: () => 
-        api.post('/plots/analyze-batch-comparison'),
+    analyzeBatchComparison: (location = 'tilda') => api.post('/plots/analyze-batch-comparison', { location }),
 
     // Get report
     getReport: (id) => api.get(`/plots/${id}/report`),
@@ -41,7 +40,10 @@ export const plotAPI = {
     delete: (id) => api.delete(`/plots/${id}`),
 
     // Get statistics
-    getStats: () => api.get('/plots/stats/summary')
+    getStats: () => api.get('/plots/stats/summary'),
+
+    // Get available locations
+    getLocations: () => api.get('/plots/locations')
 };
 
 // Error interceptor

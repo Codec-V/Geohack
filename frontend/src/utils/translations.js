@@ -167,7 +167,25 @@ export const translations = {
         // Comparison Table
         comp_vacant: "Vacant",
         comp_available: "Available",
-        comp_utils: "✅ Road  ✅ Water"
+        comp_utils: "✅ Road  ✅ Water",
+
+        // Grievance Reporting
+        report_issue: "Report Issue",
+        report_violation: "Report Violation",
+        report_desc: "Help us keep the industrial area compliant. Report any unauthorized construction or encroachment.",
+        location: "Location",
+        violation_type: "Violation Type",
+        select_type: "Select violation type",
+        illegal_cons: "Illegal Construction",
+        encroachment: "Encroachment",
+        dumping: "Waste Dumping",
+        description: "Description",
+        desc_placeholder: "Describe the issue in detail...",
+        evidence: "Evidence (Optional)",
+        upload_photo: "Upload Photo",
+        submit_report: "Submit Report",
+        report_submitted: "Grievance Submitted Successfully",
+        report_id: "Reference ID"
     },
     hi: {
         // Shared
@@ -337,6 +355,24 @@ export const translations = {
         // Comparison Table
         comp_vacant: "खाली",
         comp_available: "उपलब्ध",
-        comp_utils: "✅ सड़क ✅ पानी"
+        comp_utils: "✅ सड़क ✅ पानी",
+
+        // Grievance Reporting
+        report_issue: "समस्या की रिपोर्ट करें",
+        report_violation: "उल्लंघन की रिपोर्ट करें",
+        report_desc: "औद्योगिक क्षेत्र को अनुपालन में रखने में हमारी सहायता करें। किसी भी अनधिकृत निर्माण या अतिक्रमण की रिपोर्ट करें।",
+        location: "स्थान",
+        violation_type: "उल्लंघन का प्रकार",
+        select_type: "उल्लंघन का प्रकार चुनें",
+        illegal_cons: "अवैध निर्माण",
+        encroachment: "अतिक्रमण",
+        dumping: "कचरा डंपिंग",
+        description: "विवरण",
+        desc_placeholder: "समस्या का विस्तार से वर्णन करें...",
+        evidence: "साक्ष्य (वैकल्पिक)",
+        upload_photo: "फोटो अपलोड करें",
+        submit_report: "रिपोर्ट सबमिट करें",
+        report_submitted: "शिकायत सफलतापूर्वक सबमिट की गई",
+        report_id: "संदर्भ आईडी"
     }
 };

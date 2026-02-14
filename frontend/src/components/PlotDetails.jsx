@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { plotAPI } from '../services/api';
 import { Line } from 'react-chartjs-2';
+import Skeleton from './common/Skeleton';
 import './PlotDetails.css';
 
 const PlotDetails = ({ plot, onClose, onAnalysisComplete, lang = 'en', t = (s) => s }) => {
@@ -8,8 +9,38 @@ const PlotDetails = ({ plot, onClose, onAnalysisComplete, lang = 'en', t = (s) =
     const [generatingReport, setGeneratingReport] = useState(false);
     const [error, setError] = useState(null);
     const [sliderValue, setSliderValue] = useState(50);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Simulate initial load for Skeleton demonstration
+    useEffect(() => {
+        const timer = setTimeout(() => setIsLoading(false), 1000);
+        return () => clearTimeout(timer);
+    }, [plot?._id]);
 
     if (!plot) return null;
+
+    if (isLoading) {
+        return (
+            <div className="plot-details-overlay" onClick={onClose}>
+                <div className="plot-details-panel glass" onClick={(e) => e.stopPropagation()}>
+                    <div className="plot-details-header glass" style={{ borderBottom: 'none' }}>
+                        <div style={{ width: '100%' }}>
+                            <Skeleton width="40%" height="32px" borderRadius="8px" className="mb-2" />
+                            <Skeleton width="20%" height="16px" />
+                        </div>
+                    </div>
+                    <div className="plot-details-content">
+                        <Skeleton height="150px" borderRadius="12px" className="mb-4" />
+                        <Skeleton height="100px" borderRadius="12px" className="mb-4" />
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                            <Skeleton height="80px" borderRadius="12px" />
+                            <Skeleton height="80px" borderRadius="12px" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     const handleAnalyze = async () => {
         try {
@@ -62,8 +93,8 @@ const PlotDetails = ({ plot, onClose, onAnalysisComplete, lang = 'en', t = (s) =
 
     return (
         <div className="plot-details-overlay" onClick={onClose}>
-            <div className="plot-details-panel" onClick={(e) => e.stopPropagation()}>
-                <div className="plot-details-header">
+            <div className="plot-details-panel glass" onClick={(e) => e.stopPropagation()}>
+                <div className="plot-details-header glass">
                     <div>
                         <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
                             <h2>{plot.name}</h2>

@@ -8,33 +8,6 @@ import { plotAPI } from './services/api';
 import { translations } from './utils/translations';
 import './App.css';
 
-const DataIsland = () => {
-    const [stats, setStats] = useState({ systems: 'Online', alerts: 0, drones: 2 });
-
-    return (
-        <div className="data-island hidden md:flex" style={{
-            position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)',
-            zIndex: 9999, background: '#0f172a', padding: '8px 24px', borderRadius: '50px',
-            color: 'white', alignItems: 'center', gap: '24px', boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
-            border: '1px solid #334155'
-        }}>
-            <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-                <div style={{width: '8px', height: '8px', background: '#22c55e', borderRadius: '50%', boxShadow: '0 0 10px #22c55e'}}></div>
-                <span style={{fontSize: '0.85rem', fontWeight: '600'}}>Systems Normal</span>
-            </div>
-            <div style={{width: '1px', height: '16px', background: '#334155'}}></div>
-            <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-                <span style={{fontSize: '1rem'}}>🚁</span>
-                <span style={{fontSize: '0.85rem', fontWeight: '600'}}>2 Active</span>
-            </div>
-            <div style={{width: '1px', height: '16px', background: '#334155'}}></div>
-            <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-                <span style={{fontSize: '1rem'}}>🛡️</span>
-                <span style={{fontSize: '0.85rem', fontWeight: '600'}}>Secured</span>
-            </div>
-        </div>
-    );
-};
 
 function App() {
   const [plots, setPlots] = useState([]);

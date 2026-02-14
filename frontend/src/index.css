@@ -5,7 +5,8 @@
 }
 
 :root {
-  --color-primary: #0d9488; /* Teal-600 */
+  --color-primary: #0d9488;
+  /* Teal-600 */
   --color-primary-glow: rgba(13, 148, 136, 0.5);
   --color-success: #16a34a;
   --color-warning: #f59e0b;
@@ -33,23 +34,31 @@ body {
 
 /* Mesh Gradient Background */
 .mesh-gradient-bg {
-    background-color: hsla(0, 100%, 50%, 1);
-    background-image:
-        radial-gradient(at 40% 20%, hsla(165,100%,74%,1) 0px, transparent 50%),
-        radial-gradient(at 80% 0%, hsla(189,100%,56%,1) 0px, transparent 50%),
-        radial-gradient(at 0% 50%, hsla(340,100%,76%,1) 0px, transparent 50%),
-        radial-gradient(at 80% 50%, hsla(356,100%,71%,1) 0px, transparent 50%),
-        radial-gradient(at 0% 100%, hsla(22,100%,77%,1) 0px, transparent 50%),
-        radial-gradient(at 80% 100%, hsla(242,100%,70%,1) 0px, transparent 50%),
-        radial-gradient(at 0% 0%, hsla(343,100%,76%,1) 0px, transparent 50%);
-    background-size: 200% 200%;
-    animation: gradient-animation 15s ease infinite;
+  background-color: hsla(0, 100%, 50%, 1);
+  background-image:
+    radial-gradient(at 40% 20%, hsla(165, 100%, 74%, 1) 0px, transparent 50%),
+    radial-gradient(at 80% 0%, hsla(189, 100%, 56%, 1) 0px, transparent 50%),
+    radial-gradient(at 0% 50%, hsla(340, 100%, 76%, 1) 0px, transparent 50%),
+    radial-gradient(at 80% 50%, hsla(356, 100%, 71%, 1) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, hsla(22, 100%, 77%, 1) 0px, transparent 50%),
+    radial-gradient(at 80% 100%, hsla(242, 100%, 70%, 1) 0px, transparent 50%),
+    radial-gradient(at 0% 0%, hsla(343, 100%, 76%, 1) 0px, transparent 50%);
+  background-size: 200% 200%;
+  animation: gradient-animation 15s ease infinite;
 }
 
 @keyframes gradient-animation {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 body {
@@ -103,7 +112,8 @@ code {
 }
 
 .btn-primary:hover {
-  background: #0f766e; /* Teal-700 */
+  background: #0f766e;
+  /* Teal-700 */
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
@@ -163,17 +173,27 @@ code {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Dark Mode Overrides (Slate-900 Base) */
 .dark {
-  --color-bg: #0f172a;       /* Slate-900 */
-  --color-surface: #1e293b;  /* Slate-800 */
-  --color-text: #f1f5f9;     /* Slate-100 */
-  --color-text-secondary: #94a3b8; /* Slate-400 */
-  --color-border: #334155;   /* Slate-700 */
+  --color-bg: #0f172a;
+  /* Slate-900 */
+  --color-surface: #1e293b;
+  /* Slate-800 */
+  --color-text: #f1f5f9;
+  /* Slate-100 */
+  --color-text-secondary: #94a3b8;
+  /* Slate-400 */
+  --color-border: #334155;
+  /* Slate-700 */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5);
@@ -195,7 +215,8 @@ code {
 }
 
 .btn-primary:hover {
-  background: #0f766e; /* Teal-700 */
+  background: #0f766e;
+  /* Teal-700 */
   transform: translateY(-2px);
   box-shadow: 0 4px 12px var(--color-primary-glow);
 }
@@ -206,18 +227,19 @@ code {
 
 /* Mesh Gradient Animation Class - Apply to Hero/Backgrounds */
 .animate-gradient {
-    background-size: 200% 200%;
-    animation: gradient-animation 8s ease infinite;
+  background-size: 200% 200%;
+  animation: gradient-animation 8s ease infinite;
 }
 
 /* Dark Mode Tweaks for New UI */
 .dark .app-header {
-    background: rgba(15, 23, 42, 0.9); /* Slate-900 with opacity */
-    border-bottom: 1px solid rgba(255,255,255,0.05);
+  background: rgba(15, 23, 42, 0.9);
+  /* Slate-900 with opacity */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .dark .map-container,
-.dark .plot-card, 
+.dark .plot-card,
 .dark .card,
 .dark .modal-content,
 .dark .map-view-toggle,
@@ -226,100 +248,175 @@ code {
 .dark .coordinates-panel,
 .dark .map-instructions,
 .dark .custom-tooltip {
-    background: var(--color-surface);
-    border-color: var(--color-border);
-    color: var(--color-text);
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
 }
 
-.dark .draw-panel-header, 
+.dark .draw-panel-header,
 .dark .coords-scroll,
 .dark .draw-stats,
 .dark .coords-list {
-    background: #0f172a; /* Slate 900 for inner panels */
-    border-color: var(--color-border);
+  background: #0f172a;
+  /* Slate 900 for inner panels */
+  border-color: var(--color-border);
 }
 
-.dark .stat-value small, 
-.dark .stat-label, 
+.dark .stat-value small,
+.dark .stat-label,
 .dark .coord-row span,
 .dark .tab {
-    color: var(--color-text-secondary);
+  color: var(--color-text-secondary);
 }
 
 .dark .tab:hover {
-    background: rgba(255,255,255,0.05);
-    color: var(--color-text);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text);
 }
 
 .dark .tab.active {
-    color: #60a5fa; /* Blue-400 */
-    border-bottom-color: #60a5fa;
+  color: #60a5fa;
+  /* Blue-400 */
+  border-bottom-color: #60a5fa;
 }
 
-.dark input, 
-.dark select, 
+.dark input,
+.dark select,
 .dark textarea {
-    background: #0f172a;
-    border-color: var(--color-border);
-    color: var(--color-text);
-    color-scheme: dark;
+  background: #0f172a;
+  border-color: var(--color-border);
+  color: var(--color-text);
+  color-scheme: dark;
 }
 
 .dark input::placeholder {
-    color: #475569;
+  color: #475569;
 }
 
 /* Dark Mode Plot Card Risks */
 .dark .plot-card.risk-high {
-    background: linear-gradient(135deg, #450a0a 0%, #1e293b 100%);
-    border-color: #7f1d1d;
+  background: linear-gradient(135deg, #450a0a 0%, #1e293b 100%);
+  border-color: #7f1d1d;
 }
 
 .dark .plot-card.risk-medium {
-    background: linear-gradient(135deg, #451a03 0%, #1e293b 100%);
-    border-color: #78350f;
+  background: linear-gradient(135deg, #451a03 0%, #1e293b 100%);
+  border-color: #78350f;
 }
 
 .dark .plot-card.risk-low {
-    background: linear-gradient(135deg, #052e16 0%, #1e293b 100%);
-    border-color: #14532d;
+  background: linear-gradient(135deg, #052e16 0%, #1e293b 100%);
+  border-color: #14532d;
 }
 
 .dark .close-btn:hover {
-    background: #334155;
-    color: #ef4444;
+  background: #334155;
+  color: #ef4444;
 }
 
 .dark .action-btn.secondary {
-    background: transparent;
-    border-color: var(--color-border);
-    color: var(--color-text);
+  background: transparent;
+  border-color: var(--color-border);
+  color: var(--color-text);
 }
 
 .dark .action-btn.secondary:hover {
-    background: #334155;
+  background: #334155;
 }
 
 .dark .coord-row {
-    border-bottom-color: var(--color-border);
-    color: var(--color-text);
+  border-bottom-color: var(--color-border);
+  color: var(--color-text);
 }
 
 .dark .plot-card:hover {
-    border-color: var(--color-primary);
-    box-shadow: 0 12px 24px -6px rgba(0, 0, 0, 0.3);
-    background: linear-gradient(145deg, #1e293b, #0f172a);
+  border-color: var(--color-primary);
+  box-shadow: 0 12px 24px -6px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(145deg, #1e293b, #0f172a);
 }
 
 /* Glassmorphism Utilities */
-.glass-panel {
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+.glass {
+  background: rgba(255, 255, 255, 0.4) !important;
+  backdrop-filter: blur(12px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
 }
 
-.dark .glass-panel {
-    background: rgba(30, 41, 59, 0.7);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+.dark .glass {
+  background: rgba(15, 23, 42, 0.6) !important;
+  backdrop-filter: blur(16px) saturate(160%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.dark .glass-card {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.glass-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Premium Button Glow */
+.btn-glow {
+  position: relative;
+  z-index: 1;
+}
+
+.btn-glow::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--color-primary);
+  filter: blur(15px);
+  opacity: 0;
+  z-index: -1;
+  transition: opacity 0.3s ease;
+}
+
+.btn-glow:hover::after {
+  opacity: 0.4;
+}
+
+/* Skeleton Loading Animation */
+@keyframes skeleton-loading {
+  0% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg,
+      rgba(226, 232, 240, 0.5) 25%,
+      rgba(241, 245, 249, 0.8) 37%,
+      rgba(226, 232, 240, 0.5) 63%);
+  background-size: 400% 100%;
+  animation: skeleton-loading 1.4s ease infinite;
+  border-radius: 4px;
+}
+
+.dark .skeleton {
+  background: linear-gradient(90deg,
+      rgba(51, 65, 85, 0.4) 25%,
+      rgba(71, 85, 105, 0.6) 37%,
+      rgba(51, 65, 85, 0.4) 63%);
+  background-size: 400% 100%;
 }

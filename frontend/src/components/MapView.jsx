@@ -9,8 +9,8 @@ import { calculatePolygonArea, calculatePolygonPerimeter } from '../utils/geomet
 
 const MapView = ({ plots, onPlotClick, selectedPlot }) => {
     const mapRef = useRef(null);
-    const [center] = useState([28.6139, 77.2090]); // Default: Delhi, India
-    const [zoom] = useState(12);
+    const center = [21.23, 81.63];
+    const zoom = 15;
     const [mapType, setMapType] = useState('standard'); // 'standard' or 'satellite'
     const [showHeatmap, setShowHeatmap] = useState(false);
 
@@ -25,11 +25,13 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
     const [selectedReferencePlotId, setSelectedReferencePlotId] = useState('');
     const [analysisResults, setAnalysisResults] = useState(null);
     const [isAnalyzingComparison, setIsAnalyzingComparison] = useState(false);
+    const [analysisLoading, setAnalysisLoading] = useState(false);
 
     // Batch comparison state
     const [batchResults, setBatchResults] = useState(null);
     const [isAnalyzingBatch, setIsAnalyzingBatch] = useState(false);
     const [selectedBatchArea, setSelectedBatchArea] = useState('all');
+
 
     // Draggable state for instructions panel
     const [position, setPosition] = useState(null);
@@ -103,7 +105,9 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
             window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('mouseup', handleMouseUp);
         };
-    }, [isDrawMode, position]); // Re-bind if mode changes
+    }, [isDrawMode, position]);
+
+ // Re-bind if mode changes
 
     // Search state
     const [searchQuery, setSearchQuery] = useState('');
@@ -867,17 +871,7 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
                 >
                     🛰️ Satellite
                 </button>
-                <div style={{ width: '1px', background: '#e2e8f0', margin: '0 4px' }}></div>
-                <button
-                    className={`toggle-btn ${showHeatmap ? 'active' : ''}`}
-                    style={{ background: showHeatmap ? '#ef4444' : 'white', color: showHeatmap ? 'white' : '#ef4444', borderColor: '#ef4444' }}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        setShowHeatmap(!showHeatmap);
-                    }}
-                >
-                    🔥 Heatmap
-                </button>
+
                 <div style={{ width: '1px', background: '#e2e8f0', margin: '0 4px' }}></div>
                 <button
                     className={`toggle-btn ${batchResults ? 'active' : ''}`}
@@ -892,7 +886,7 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
                     }}
                     disabled={isAnalyzingBatch}
                 >
-                    {isAnalyzingBatch ? '⏳ Loading...' : (batchResults ? '✓ Batch' : '📊 Batch Analysis')}
+                    {isAnalyzingBatch ? '⏳ Loading...' : ( '📊  Analysis')}
                 </button>
             </div>
 
@@ -903,6 +897,7 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
                 ref={mapRef}
             >
                 <MapEvents />
+
 
                 {mapType === 'standard' ? (
                     <TileLayer
@@ -1082,28 +1077,25 @@ const MapView = ({ plots, onPlotClick, selectedPlot }) => {
                 )}
             </MapContainer>
 
-            {/* Legend */}
-            <div className="map-legend">
-                <h4>Land Usage Types</h4>
+
+            {/* Re-adding Legend at Bottom Left for cleaner look */}
+            <div className="map-legend" style={{ bottom: '30px', left: '20px', top: 'auto' }}>
+                <h4 style={{ fontSize: '0.75rem', marginBottom: '8px' }}>GIS LAYER GUIDE</h4>
                 <div className="legend-item">
                     <span className="legend-color" style={{ background: '#dc2626' }}></span>
                     <span>Encroached</span>
                 </div>
                 <div className="legend-item">
-                    <span className="legend-color" style={{ background: '#16a34a' }}></span>
-                    <span>Partially Constructed</span>
-                </div>
-                <div className="legend-item">
-                    <span className="legend-color" style={{ background: '#f59e0b' }}></span>
-                    <span>Vacant</span>
-                </div>
-                <div className="legend-item">
                     <span className="legend-color" style={{ background: '#3b82f6' }}></span>
-                    <span>Fully Constructed</span>
+                    <span>Valid Usage</span>
                 </div>
                 <div className="legend-item">
-                    <span className="legend-color" style={{ background: '#94a3b8' }}></span>
-                    <span>Not Analyzed</span>
+                    <span className="legend-color" style={{ background: '#16a34a' }}></span>
+                    <span>Unused Land</span>
+                </div>
+                <div className="legend-item">
+                    <span className="legend-color" style={{ background: '#fbbf24' }}></span>
+                    <span>Vacant (High Risk)</span>
                 </div>
             </div>
         </div>
