@@ -7,10 +7,16 @@
 /* Header */
 /* Header */
 .app-header {
-  background: linear-gradient(135deg, #115e59 0%, #134e4a 100%); /* Teal-800 to Teal-900 */
+  background: rgba(13, 148, 136, 0.95); /* Teal-600 with opacity */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   color: white;
-  padding: 1.5rem 0;
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  padding: 1.25rem 0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  transition: all 0.3s ease;
 }
 
 .header-content {
@@ -27,18 +33,22 @@
 
 .logo-icon {
   font-size: 2.5rem;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
 }
 
 .logo h1 {
+  font-family: var(--font-heading);
   font-size: 1.75rem;
   font-weight: 700;
   margin: 0;
+  letter-spacing: -0.02em;
 }
 
 .tagline {
   font-size: 0.875rem;
   opacity: 0.9;
   margin: 0.25rem 0 0 0;
+  font-weight: 300;
 }
 
 /* Main Content */
@@ -69,12 +79,13 @@
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
-  font-size: 0.875rem;
+  font-size: 0.9rem;
   font-weight: 500;
   color: var(--color-text-secondary);
   cursor: pointer;
   transition: all 0.2s;
   margin-bottom: -2px;
+  font-family: var(--font-heading);
 }
 
 .tab:hover {
@@ -112,6 +123,7 @@
 }
 
 .plots-list-section h2 {
+  font-family: var(--font-heading);
   font-size: 1.5rem;
   font-weight: 600;
   margin-bottom: 1.5rem;
@@ -126,16 +138,19 @@
 
 .plot-card {
   background: var(--color-surface);
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 1.5rem;
-  border: 2px solid var(--color-border);
+  border: 1px solid var(--color-border);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
 }
 
 .plot-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px -6px rgba(0, 0, 0, 0.1), 0 4px 8px -2px rgba(0,0,0,0.06);
+  border-color: var(--color-primary);
 }
 
 .plot-card.risk-high {

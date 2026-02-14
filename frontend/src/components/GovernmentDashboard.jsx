@@ -6,6 +6,8 @@ import FinanceSection from './DashboardSections/FinanceSection';
 import LandUsageSection from './DashboardSections/LandUsageSection';
 import DevelopmentSection from './DashboardSections/DevelopmentSection';
 
+import GISComparisonPanel from './GISComparisonPanel';
+
 // Register ChartJS components globally for all sections
 ChartJS.register(ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale);
 
@@ -14,6 +16,7 @@ const GovernmentDashboard = ({ onRefresh, lang = 'en', t = (s) => s, darkMode = 
     const [plots, setPlots] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [showGISPanel, setShowGISPanel] = useState(false);
 
     const currentDate = new Date().toLocaleDateString('en-GB', {
         day: '2-digit',
@@ -61,12 +64,28 @@ const GovernmentDashboard = ({ onRefresh, lang = 'en', t = (s) => s, darkMode = 
 
     return (
         <div className="dashboard">
+            {showGISPanel && <GISComparisonPanel onClose={() => setShowGISPanel(false)} t={t} />}
+            
             <header className="dashboard-header" style={{ borderColor: darkMode ? '#334155' : '#e2e8f0' }}>
                 <div>
                     <h1>{t('appTitle')}</h1>
                     <p className="subtitle">{t('govt_portal')} • {currentDate}</p>
                 </div>
                 <div style={{display: 'flex', gap: '12px'}}>
+                     <button className="btn" onClick={() => setShowGISPanel(!showGISPanel)} style={{
+                        padding: '8px 16px', 
+                        background: showGISPanel ? '#4f46e5' : (darkMode ? '#1e293b' : 'white'), 
+                        color: showGISPanel ? 'white' : (darkMode ? '#e2e8f0' : '#475569'), 
+                        border: showGISPanel ? 'none' : `1px solid ${darkMode ? '#334155' : '#cbd5e1'}`, 
+                        borderRadius: '6px', 
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontWeight: '600'
+                    }}>
+                        <span>🛰️</span> GIS Sync
+                    </button>
                     <button className="btn-print" onClick={() => window.print()} style={{
                         padding: '8px 16px', 
                         background: darkMode ? '#334155' : '#334155', 

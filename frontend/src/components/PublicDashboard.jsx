@@ -230,16 +230,18 @@ const PublicDashboard = ({ lang = 'en', t = (s) => s, darkMode = false }) => {
         <div className="dashboard-content animate-fade-in" style={{padding: '24px', maxWidth: '1200px', margin: '0 auto', paddingBottom: '100px'}}>
             
             {/* Hero Section */}
-            <div className="no-print" style={{textAlign: 'center', marginBottom: '40px', padding: '40px 0', background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', borderRadius: '16px'}}>
-                <h1 style={{fontSize: '2.5rem', fontWeight: '800', color: '#1e293b', marginBottom: '12px'}}>
-                    {t('hero_title')}
-                </h1>
-                <p style={{fontSize: '1.25rem', color: '#64748b', maxWidth: '600px', margin: '0 auto'}}>
-                    {t('hero_subtitle')}
-                </p>
-                <button onClick={() => window.print()} style={{marginTop: '20px', padding: '8px 16px', borderRadius: '6px', border: '1px solid #94a3b8', background: 'white', cursor: 'pointer'}}>
-                    📄 {t('download_brochure')}
-                </button>
+            <div className="no-print mesh-gradient-bg animate-gradient" style={{textAlign: 'center', marginBottom: '40px', padding: '60px 0', borderRadius: '24px', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'}}>
+                <div style={{position: 'relative', zIndex: 10}}>
+                    <h1 style={{fontSize: '3.5rem', fontWeight: '800', marginBottom: '16px', letterSpacing: '-0.02em', textShadow: '0 2px 4px rgba(0,0,0,0.1)', fontFamily: 'var(--font-heading)'}}>
+                        {t('hero_title')}
+                    </h1>
+                    <p style={{fontSize: '1.25rem', opacity: '0.95', maxWidth: '600px', margin: '0 auto', fontWeight: '500'}}>
+                        {t('hero_subtitle')}
+                    </p>
+                    <button onClick={() => window.print()} style={{marginTop: '32px', padding: '12px 24px', borderRadius: '12px', border: 'none', background: 'white', color: '#0d9488', cursor: 'pointer', fontWeight: '600', fontSize: '1rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', transition: 'transform 0.2s'}}>
+                        📄 {t('download_brochure')}
+                    </button>
+                </div>
             </div>
 
             <style>
