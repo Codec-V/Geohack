@@ -10,6 +10,7 @@ const PlotDetails = ({ plot, onClose, onAnalysisComplete, lang = 'en', t = (s) =
     const [error, setError] = useState(null);
     const [sliderValue, setSliderValue] = useState(50);
     const [isLoading, setIsLoading] = useState(true);
+    const [showBlockchainModal, setShowBlockchainModal] = useState(false);
 
     // Simulate initial load for Skeleton demonstration
     useEffect(() => {
@@ -77,8 +78,6 @@ const PlotDetails = ({ plot, onClose, onAnalysisComplete, lang = 'en', t = (s) =
 
     const riskLevel = getRiskLevel(plot.latestAnalysis?.finalRiskScore);
 
-    // Blockchain Modal State
-    const [showBlockchainModal, setShowBlockchainModal] = useState(false);
 
     // Simulated Blockchain Data
     const blockchainData = {
